@@ -9,20 +9,21 @@ in VS_OUT
     vec2 TexCoords; // Texture coordinates
 } fs_in;
 
-uniform Texture uAlbedo;
-uniform Texture uEmissive;
-uniform Texture uNormal;
-uniform Texture uMaterial;
+uniform Material uMaterial;
 
 void main()
 {
-    vec4 albedo = sampleTexture(uAlbedo, fs_in.TexCoords);
+    vec4 albedo = sampleTexture(uMaterial.albedo, fs_in.TexCoords);
     if (albedo.a < 0.5)
         discard;
 
-    vec3 emissive = sampleTexture(uEmissive, fs_in.TexCoords).rgb;
-    vec3 normal = sampleTexture(uNormal, fs_in.TexCoords).xyz;
-    vec3 material = sampleTexture(uMaterial, fs_in.TexCoords).xyz;
+    vec3 emissive = sampleTexture(uMaterial.emissive, fs_in.TexCoords).rgb;
+    vec3 normal = sampleTexture(uMaterial.normal, fs_in.TexCoords).xyz;
+    
+    float roughness = sampleTexture(uMaterial.roughness, fs_in.TexCoords).r;
+    float metallic = sampleTexture(uMaterial.metallic, fs_in.TexCoords).r;
+    float ao = sampleTexture(uMaterial.ao, fs_in.TexCoords).r;
+    vec3 material = vec3(roughness, metallic, ao);
 
     Albedo = vec4(albedo.rgb, 1.0);
     Emissive = vec4(0.0);

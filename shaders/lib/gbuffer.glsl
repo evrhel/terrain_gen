@@ -1,6 +1,6 @@
 /* Common fragment shader for G-buffer rendering */
 
-@include "types.glsl"
+@include "base.glsl"
 
 out (location = 0) vec4 Albedo;         // Fragment color
 out (location = 1) vec4 Emissive;       // Emissive color

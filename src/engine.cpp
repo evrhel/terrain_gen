@@ -7,8 +7,28 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_sdl3.h>
 
+#include "mesh.h"
+
+static const Vector4 kQuadVertices[] = {
+    Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
+    Vector4(1.0f, -1.0f, 1.0f, 0.0f),
+    Vector4(1.0f, 1.0f, 1.0f, 1.0f),
+    Vector4(-1.0f, 1.0f, 0.0f, 1.0f),
+};
+
+static const GLuint kQuadIndices[] = {
+    0,
+    1,
+    2,
+    2,
+    3,
+    0,
+};
+
 static SDL_Window *_window;
 static SDL_GLContext _gl;
+
+static GLuint _quadVao, _quadVbo, _quadEbo;
 
 static IntVector2 _windowSize;
 
@@ -20,6 +40,8 @@ static float _deltaTime;
 static bool _keys[SDL_NUM_SCANCODES];
 static bool _mouseButtons[8];
 static IntVector2 _mousePosition;
+
+static std::vector<Mesh *> _meshes;
 
 static bool pollEvents()
 {
@@ -60,6 +82,36 @@ static bool pollEvents()
     return true;
 }
 
+static void createQuad()
+{
+    glGenVertexArrays(1, &_quadVao);
+
+    glBindVertexArray(_quadVao);
+
+    glGenBuffers(1, &_quadVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, _quadVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVertices), kQuadVertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &_quadEbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _quadEbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kQuadIndices), kQuadIndices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vector4), (void *)0);
+
+    glBindVertexArray(0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+static void destroyQuad()
+{
+    glDeleteBuffers(1, &_quadEbo);
+    glDeleteBuffers(1, &_quadVbo);
+    glDeleteVertexArrays(1, &_quadVao);
+}
+
 void initAll(int argc, char *argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -89,6 +141,8 @@ void initAll(int argc, char *argv[])
     ImGui_ImplSDL3_InitForOpenGL(_window, _gl);
     ImGui_ImplOpenGL3_Init();
 
+    createQuad();
+
     printf("OpenGL : %s\n", glGetString(GL_VERSION));
     printf("GLSL   : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
     printf("Vendor : %s\n", glGetString(GL_VENDOR));
@@ -99,6 +153,12 @@ void initAll(int argc, char *argv[])
 
 void quitAll()
 {
+    for (Mesh *mesh : _meshes)
+        delete mesh;
+    _meshes.clear();
+
+    destroyQuad();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
@@ -158,6 +218,12 @@ const IntVector2 &getMousePos()
     return _mousePosition;
 }
 
+void drawQuad()
+{
+    glBindVertexArray(_quadVao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
 bool beginFrame()
 {
     float time = ls_time();
@@ -175,4 +241,14 @@ void updateAll()
 void endFrame()
 {
     SDL_GL_SwapWindow(_window);
+}
+
+const std::vector<Mesh *> &getMeshes()
+{
+    return _meshes;
+}
+
+void addMesh(Mesh *mesh)
+{
+    _meshes.push_back(mesh);
 }

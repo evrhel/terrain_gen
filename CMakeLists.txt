@@ -15,7 +15,10 @@ set(SOURCES
 	src/camera.cpp
 	src/engine.cpp
     src/main.cpp
+	src/material.cpp
 	src/mesh.cpp
+	src/shader.cpp
+	src/texture.cpp
 
     thirdparty/glad/src/glad.c
 	
@@ -25,6 +28,8 @@ set(SOURCES
 	thirdparty/imgui/imgui.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	thirdparty/imgui/backends/imgui_impl_sdl3.cpp
+
+	thirdparty/stb/src/stb_image.c
 )
 
 add_executable(terrain_gen ${SOURCES})
@@ -36,6 +41,7 @@ target_include_directories(terrain_gen PRIVATE ${SDL3_SOURCE_DIR}/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/glad/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/MatrixUtil/MatrixUtil/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/imgui)
+target_include_directories(terrain_gen PRIVATE thirdparty/stb/include)
 
 # pack shaders into header files
 set(SHADER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)

@@ -48,6 +48,16 @@ struct Camera
     mat4 invViewProjection;
 };
 
+struct Material
+{
+    Texture albedo;
+    Texture emissive;
+    Texture normal;
+    Texture roughness;
+    Texture metallic;
+    Texture ao;
+};
+
 /* Common functions */
 
 vec3 sampleAtmosphere(vec3 direction)

@@ -8,7 +8,7 @@ using namespace mutil;
 class Shader
 {
 public:
-    void use();
+    void use() const;
 
     void load(const char *vertexSource, const char *fragmentSource);
 
@@ -24,5 +24,5 @@ public:
     ~Shader();
 
 private:
-    GLuint _shader;
+    GLuint _program;
 };
