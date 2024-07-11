@@ -7,3 +7,6 @@
 [submodule "thirdparty/imgui"]
 	path = thirdparty/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "thirdparty/lysys"]
+	path = thirdparty/lysys
+	url = git@github.com:evrhel/lysys.git

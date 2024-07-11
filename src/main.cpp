@@ -1,9 +1,15 @@
+#include "engine.h"
 
-#include <SDL3/SDL.h>
-#include <mutil/mutil.h>
-
-using namespace mutil;
-
-int main(int argc, char *arv[])
+int main(int argc, char *argv[])
 {
+    initAll(argc, argv);
+
+    while (beginFrame())
+    {
+        updateAll();
+        endFrame();
+    }
+
+    quitAll();
+    return 0;
 }

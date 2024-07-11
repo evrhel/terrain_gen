@@ -2,22 +2,40 @@ cmake_minimum_required(VERSION 3.10)
 
 project(terrain_gen)
 
+if (APPLE)
+	enable_language(OBJC)
+endif()
+
 add_subdirectory(thirdparty/SDL)
+add_subdirectory(thirdparty/lysys)
 
 set(CMAKE_CXX_STANDARD 14)
 
 set(SOURCES
-    thirdparty/glad/src/glad.c
+	src/camera.cpp
+	src/engine.cpp
     src/main.cpp
+	src/mesh.cpp
+
+    thirdparty/glad/src/glad.c
+	
+	thirdparty/imgui/imgui_draw.cpp
+	thirdparty/imgui/imgui_tables.cpp
+	thirdparty/imgui/imgui_widgets.cpp
+	thirdparty/imgui/imgui.cpp
+	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
+	thirdparty/imgui/backends/imgui_impl_sdl3.cpp
 )
 
 add_executable(terrain_gen ${SOURCES})
 
 target_link_libraries(terrain_gen PRIVATE SDL3::SDL3)
+target_link_libraries(terrain_gen PRIVATE liblysys)
 
 target_include_directories(terrain_gen PRIVATE ${SDL3_SOURCE_DIR}/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/glad/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/MatrixUtil/MatrixUtil/include)
+target_include_directories(terrain_gen PRIVATE thirdparty/imgui)
 
 # pack shaders into header files
 set(SHADER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
