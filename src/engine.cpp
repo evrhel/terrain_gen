@@ -36,7 +36,7 @@ static GLuint _quadVao, _quadVbo, _quadEbo;
 
 static IntVector2 _windowSize;
 
-static float _startTime;
+static double _startTime;
 
 static float _startFrameTime;
 static float _deltaTime;
@@ -217,7 +217,7 @@ void initAll(int argc, char *argv[])
     _skybox->load();
 
     /* Initialize time */
-    _startTime = ls_time();
+    _startTime = ls_time64();
     _startFrameTime = _startTime;
 }
 
@@ -269,7 +269,7 @@ const IntVector2 &getWindowSize()
 
 float getTime()
 {
-    return ls_time() - _startTime;
+    return (float)(ls_time64() - _startTime);
 }
 
 float deltaTime()
@@ -304,7 +304,7 @@ void drawQuad()
 
 bool beginFrame()
 {
-    float time = ls_time();
+    float time = getTime();
 
     _deltaTime = time - _startFrameTime;
     _startFrameTime = time;
@@ -315,7 +315,7 @@ bool beginFrame()
     return pollEvents();
 }
 
-void updateAll()
+void renderAll()
 {
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

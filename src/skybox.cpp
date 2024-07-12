@@ -10,18 +10,16 @@ struct SkyboxGPU
     float _pad0;
 
     Vector3 sunColor;
-    float _pad1;
 
     float sunIntensity;
 
     float sunTightness;
-    float _pad2[2];
+    float _pad2[3];
 
     Vector3 horizonColor;
     float _pad3;
 
     Vector3 zenithColor;
-    float _pad4;
 
     float atmosphereHeight;
     float _pad5[3];
@@ -99,7 +97,7 @@ void Skybox::update()
         return;
 
     /* Update sun direction */
-    Quaternion q1 = mutil::rotateaxis(kWorldRight, mutil::radians(_altitude));
+    Quaternion q1 = mutil::rotateaxis(kWorldRight, -mutil::radians(_altitude));
     Quaternion q2 = mutil::rotateaxis(kWorldUp, mutil::radians(_azimuth));
     Quaternion q = q1 * q2;
     _sunDirection = mutil::rotatevector(q, kWorldFront);

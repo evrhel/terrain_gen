@@ -8,11 +8,10 @@ struct CameraGPU
     float _pad0;
 
     Vector3 direction;
-    float _pad1;
 
     float near;
     float far;
-    float _pad2[2];
+    float _pad2[3];
 
     Vector3 front;
     float _pad3;
@@ -48,7 +47,7 @@ void Camera::update()
     if (!_dirty)
         return;
 
-    Quaternion q1 = rotateaxis(kWorldUp, mutil::radians(_yaw));
+    Quaternion q1 = rotateaxis(kWorldUp, -mutil::radians(_yaw));
     Quaternion q2 = rotateaxis(kWorldRight, mutil::radians(_pitch));
     Quaternion q = q1 * q2;
 
@@ -63,7 +62,7 @@ void Camera::update()
     _invProj = inverse(_proj);
 
     _viewProj = _proj * _view;
-    _invViewProj = _invView * _invProj;
+    _invViewProj = inverse(_viewProj);
 
     upload();
 

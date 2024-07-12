@@ -19,7 +19,7 @@ void main()
     /* Draw sun */
     float intensity = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
     intensity = pow(intensity, uAtmosphere.sunTightness);
-    color += uAtmosphere.sunColor * intensity * uAtmosphere.sunIntensity;
+    color += vec3(1.0) * intensity * 1.0 * uAtmosphere.sunIntensity;
 
     Albedo = vec4(color, 1.0);
     Emissive = vec4(0.0, 0.0, 0.0, 1.0);

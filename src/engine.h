@@ -43,7 +43,7 @@ const IntVector2 &getMousePos();
 void drawQuad();
 
 bool beginFrame();
-void updateAll();
+void renderAll();
 void endFrame();
 
 Shader *getShader(ShaderID id);
