@@ -2,17 +2,22 @@
 
 #include <cstdio>
 
+#include "material.h"
+#include "util.h"
+
 void Shader::use() const
 {
     glUseProgram(_program);
 }
 
-void Shader::load(const char *vertexSource, const char *fragmentSource)
+void Shader::load(const char *name, const char *vertexSource, const char *fragmentSource)
 {
     GLuint vert, frag;
     int success;
     char infoLog[512];
     bool hasError = false;
+
+    printf("Shader::load: Loading %s\n", name);
 
     /* Compile vertex shader */
 
@@ -67,6 +72,19 @@ void Shader::load(const char *vertexSource, const char *fragmentSource)
 
     glDeleteShader(vert);
     glDeleteShader(frag);
+
+    _name = name;
+
+    /* Bind standard buffers */
+    bindUniformBlock("Camera", CAMERA_UNIFORM_BINDING);
+    bindUniformBlock("Atmosphere", ATMOSPHERE_UNIFORM_BINDING);
+}
+
+void Shader::setBool(const char *name, bool value)
+{
+    int loc = glGetUniformLocation(_program, name);
+    if (loc != -1)
+        glUniform1i(loc, value);
 }
 
 void Shader::setFloat(const char *name, float value)
@@ -116,6 +134,57 @@ void Shader::setMatrix4(const char *name, const Matrix4 &value)
     int loc = glGetUniformLocation(_program, name);
     if (loc != -1)
         glUniformMatrix4fv(loc, 1, GL_FALSE, (float *)&value);
+}
+
+void Shader::setTexture(const char *name, GLuint texture, int unit)
+{
+    int loc = glGetUniformLocation(_program, name);
+    if (loc != -1)
+    {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(loc, unit);
+    }
+}
+
+void Shader::setMaterial(const Material &material)
+{
+    /* Albedo */
+    setTexture("uMaterial.albedo.tex", material.albedo.get(), 0);
+    setBool("uMaterial.albedo.hasTex", material.albedo.get() != 0);
+    setVector3("uMaterial.albedo.color", material.albedoColor);
+
+    /* Emissive */
+    setTexture("uMaterial.emissive.tex", material.emissive.get(), 1);
+    setBool("uMaterial.emissive.hasTex", material.emissive.get() != 0);
+    setVector3("uMaterial.emissive.color", material.emissiveColor);
+
+    /* Normal */
+    setTexture("uMaterial.normal.tex", material.normal.get(), 2);
+    setBool("uMaterial.normal.hasTex", material.normal.get() != 0);
+    setVector3("uMaterial.normal.color", material.normal.get() ? Vector3(1.0f) : kDefaultNormal);
+
+    /* Roughness */
+    setTexture("uMaterial.roughness.tex", material.roughness.get(), 3);
+    setBool("uMaterial.roughness.hasTex", material.roughness.get() != 0);
+    setFloat("uMaterial.roughness.value", material.roughnessValue);
+
+    /* Metallic */
+    setTexture("uMaterial.metallic.tex", material.metallic.get(), 4);
+    setBool("uMaterial.metallic.hasTex", material.metallic.get() != 0);
+    setFloat("uMaterial.metallic.value", material.metallicValue);
+
+    /* AO */
+    setTexture("uMaterial.ao.tex", material.ao.get(), 5);
+    setBool("uMaterial.ao.hasTex", material.ao.get() != 0);
+    setFloat("uMaterial.ao.value", material.aoValue);
+}
+
+void Shader::bindUniformBlock(const char *name, GLuint bindingPoint)
+{
+    GLuint index = glGetUniformBlockIndex(_program, name);
+    if (index != GL_INVALID_INDEX)
+        glUniformBlockBinding(_program, index, bindingPoint);
 }
 
 Shader::Shader() : _program(0) {}

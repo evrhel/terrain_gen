@@ -1,51 +1,18 @@
 /* Common structure definitions */
 
-struct DirLight
-{
-    vec3 direction;
-    vec3 color;
-    float intensity;
-};
-
-struct Atmosphere
-{
-    float sunSize;
-    float sunFalloff;
-
-    vec3 horizonColor;
-    vec3 zenithColor;
-    float atmosphereHeight;
-};
-
 struct Gbuffer
 {
     sampler2D albedo;
     sampler2D emissive;
+    sampler2D normal;
+    sampler2D material; // roughness, metallic, ao
 };
 
 struct Texture
 {
     sampler2D tex;
-    bool useTexture;
-    vec4 color;
-};
-
-struct Camera
-{
-    vec3 position;
-    vec3 direction;
-
-    float near;
-    float far;
-
-    mat4 view;
-    mat4 invView;
-
-    mat4 projection;
-    mat4 invProjection;
-
-    mat4 viewProjection;
-    mat4 invViewProjection;
+    bool hasTex;
+    vec3 color;
 };
 
 struct Material
@@ -58,21 +25,18 @@ struct Material
     Texture ao;
 };
 
-/* Common functions */
-
-vec3 sampleAtmosphere(vec3 direction)
+vec4 sampleTexture(Texture tex, vec2 texCoords)
 {
-    // TODO: Implement
-    return vec3(0.0);
-}
-
-vec4 sampleTexture(Texture texture, vec2 texCoords)
-{
-    if (texture.useTexture)
+    if (tex.hasTex)
     {
-        return texture2D(texture.tex, texCoords) * texture.color;
+        vec4 color = texture(tex.tex, texCoords);
+        color.rgb *= tex.color;
+        return color;
     }
 
-    return texture.color;
+    return vec4(tex.color, 1.0);
 }
 
+const vec3 kWorldUp = vec3(0.0, 1.0, 0.0);
+const vec3 kWorldRight = vec3(1.0, 0.0, 0.0);
+const vec3 kWorldFront = vec3(0.0, 0.0, 1.0);

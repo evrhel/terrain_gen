@@ -10,6 +10,20 @@
 using namespace mutil;
 
 class Mesh;
+class Shader;
+class Skybox;
+class Camera;
+
+enum ShaderID
+{
+    SHADER_COMPOSITE1,
+    SHADER_COMPOSITE2,
+
+    SHADER_GENERIC,
+    SHADER_SKYBOX,
+
+    SHADER_COUNT
+};
 
 void initAll(int argc, char *argv[]);
 void quitAll();
@@ -32,5 +46,11 @@ bool beginFrame();
 void updateAll();
 void endFrame();
 
+Shader *getShader(ShaderID id);
+
+Camera *getCamera();
+
 const std::vector<Mesh *> &getMeshes();
 void addMesh(Mesh *mesh);
+
+Skybox *getSkybox();

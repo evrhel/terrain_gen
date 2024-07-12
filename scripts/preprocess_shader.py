@@ -1,7 +1,7 @@
 import sys
 import os
 
-def process_file(infile, included = []):
+def process_file(infile, included = [], first = True):
     """
     Preprocesses a shader file by resolving @include directives
 
@@ -44,7 +44,7 @@ def process_file(infile, included = []):
                     print(f('{infile}:{linenum}: error: file not found: {name}'))
                     has_error = True
                 else:
-                    include_data = process_file(path, included + [infile])
+                    include_data = process_file(path, included=included + [infile], first=False)
                     if include_data is None:
                         has_error = True
 
@@ -52,9 +52,14 @@ def process_file(infile, included = []):
 
     if has_error:
         return None
+    
+    result = ''
+    
+    # Version directive must be first
+    if not first:
+        result += f'#line 1\n'
 
     linenum = 0
-    result = f'#line 1 {os.path.basename(infile)}\n'
 
     # create output file
     for line in lines:
@@ -64,7 +69,7 @@ def process_file(infile, included = []):
 
             result += f'\n// @include "{os.path.relpath(path, dir)}"\n'
             result += include_data
-            result += f'#line {linenum + 1} {os.path.basename(infile)}\n'
+            result += f'#line {linenum + 1}\n'
         else:
             result += line + '\n'
 

@@ -18,7 +18,9 @@ set(SOURCES
 	src/material.cpp
 	src/mesh.cpp
 	src/shader.cpp
+	src/skybox.cpp
 	src/texture.cpp
+	src/util.cpp
 
     thirdparty/glad/src/glad.c
 	
@@ -47,9 +49,13 @@ target_include_directories(terrain_gen PRIVATE thirdparty/stb/include)
 set(SHADER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 set(SHADER_OUT_DIR include/shaders)
 
-set(COMPOSITE_FRAG_FILE ${SHADER_SRC_DIR}/composite.frag)
-set(COMPOSITE_FRAG_HEADER ${SHADER_OUT_DIR}/composite.frag.h)
-set(COMPOSITE_FRAG_NAME composite_frag_source)
+set(COMPOSITE1_FRAG_FILE ${SHADER_SRC_DIR}/composite1.frag)
+set(COMPOSITE1_FRAG_HEADER ${SHADER_OUT_DIR}/composite1.frag.h)
+set(COMPOSITE1_FRAG_NAME composite1_frag_source)
+
+set(COMPOSITE2_FRAG_FILE ${SHADER_SRC_DIR}/composite2.frag)
+set(COMPOSITE2_FRAG_HEADER ${SHADER_OUT_DIR}/composite2.frag.h)
+set(COMPOSITE2_FRAG_NAME composite2_frag_source)
 
 set(GENERIC_FRAG_FILE ${SHADER_SRC_DIR}/generic.frag)
 set(GENERIC_FRAG_HEADER ${SHADER_OUT_DIR}/generic.frag.h)
@@ -73,10 +79,17 @@ set(SKYBOX_VERT_NAME skybox_vert_source)
 
 
 add_custom_command(
-	OUTPUT ${COMPOSITE_FRAG_HEADER}
-	COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DINPUT_FILE=${COMPOSITE_FRAG_FILE} -DOUTPUT_FILE=${COMPOSITE_FRAG_HEADER} -DVARIABLE_NAME=${COMPOSITE_FRAG_NAME} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/shader_to_header.cmake
-	DEPENDS ${COMPOSITE_FRAG_FILE}
-	COMMENT "Generating ${COMPOSITE_FRAG_HEADER}"
+	OUTPUT ${COMPOSITE1_FRAG_HEADER}
+	COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DINPUT_FILE=${COMPOSITE1_FRAG_FILE} -DOUTPUT_FILE=${COMPOSITE1_FRAG_HEADER} -DVARIABLE_NAME=${COMPOSITE1_FRAG_NAME} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/shader_to_header.cmake
+	DEPENDS ${COMPOSITE1_FRAG_FILE}
+	COMMENT "Generating ${COMPOSITE1_FRAG_HEADER}"
+)
+
+add_custom_command(
+	OUTPUT ${COMPOSITE2_FRAG_HEADER}
+	COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DINPUT_FILE=${COMPOSITE2_FRAG_FILE} -DOUTPUT_FILE=${COMPOSITE2_FRAG_HEADER} -DVARIABLE_NAME=${COMPOSITE2_FRAG_NAME} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/shader_to_header.cmake
+	DEPENDS ${COMPOSITE2_FRAG_FILE}
+	COMMENT "Generating ${COMPOSITE2_FRAG_HEADER}"
 )
 
 add_custom_command(
@@ -115,7 +128,8 @@ add_custom_command(
 )
 
 add_custom_target(generate_terrain_gen_shaders DEPENDS
-    ${COMPOSITE_FRAG_HEADER}
+    ${COMPOSITE1_FRAG_HEADER}
+	${COMPOSITE2_FRAG_HEADER}
     ${GENERIC_FRAG_HEADER}
     ${GENERIC_VERT_HEADER}
     ${SCREEN_VERT_HEADER}

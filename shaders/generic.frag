@@ -1,6 +1,8 @@
 #version 410 core
 
+@include "lib/types.glsl"
 @include "lib/gbuffer.glsl"
+@include "lib/atmosphere.glsl"
 
 in VS_OUT
 {

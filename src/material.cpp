@@ -31,16 +31,16 @@ Material::Material() : albedoColor(1.0f),
 {
 }
 
-Material::Material(Material &&other) : albedo(std::move(other.albedo)),
-                                       emissive(std::move(other.emissive)),
-                                       normal(std::move(other.normal)),
-                                       roughness(std::move(other.roughness)),
-                                       metallic(std::move(other.metallic)),
-                                       ao(std::move(other.ao)),
-                                       albedoColor(other.albedoColor),
-                                       emissiveColor(other.emissiveColor),
-                                       roughnessValue(other.roughnessValue),
-                                       metallicValue(other.metallicValue),
-                                       aoValue(other.aoValue)
+Material::Material(Material &&other) noexcept : albedo(std::move(other.albedo)),
+                                                emissive(std::move(other.emissive)),
+                                                normal(std::move(other.normal)),
+                                                roughness(std::move(other.roughness)),
+                                                metallic(std::move(other.metallic)),
+                                                ao(std::move(other.ao)),
+                                                albedoColor(other.albedoColor),
+                                                emissiveColor(other.emissiveColor),
+                                                roughnessValue(other.roughnessValue),
+                                                metallicValue(other.metallicValue),
+                                                aoValue(other.aoValue)
 {
 }

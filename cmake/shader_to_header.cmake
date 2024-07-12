@@ -5,7 +5,17 @@ endif()
 set(INTERMEDIATE_FILE ${CMAKE_CURRENT_BINARY_DIR}/scripts/.tmp.glsl)
 
 # Find python
-find_program(PYTHON "python")
+find_program(PYTHON "python3")
+
+if (NOT PYTHON)
+    find_program(PYTHON "python")
+    if (NOT PYTHON)
+        find_program(PYTHON "py")
+        if (NOT PYTHON)
+            message(FATAL_ERROR "Python not found")
+        endif()
+    endif()
+endif()
 
 # Run scripts/preprocess_shader.py
 execute_process(

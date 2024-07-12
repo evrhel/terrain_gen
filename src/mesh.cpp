@@ -4,35 +4,36 @@
 
 void Mesh::load(const Vertex *vertex, GLsizei nVertices, const GLuint *index, GLsizei nIndices)
 {
-    glCreateVertexArrays(1, &_vao);
+    glGenVertexArrays(1, &_vao);
+    glBindVertexArray(_vao);
 
-    glCreateBuffers(1, &_vbo);
-    glCreateBuffers(1, &_ebo);
+    /* Upload vertices */
 
-    /* Upload vertices and indices */
+    glGenBuffers(1, &_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+    glBufferData(GL_ARRAY_BUFFER, nVertices * sizeof(Vertex), vertex, GL_STATIC_DRAW);
 
-    glNamedBufferData(_vbo, nVertices * sizeof(Vertex), vertex, GL_STATIC_DRAW);
-    glNamedBufferData(_ebo, nIndices * sizeof(GLuint), index, GL_STATIC_DRAW);
+    /* Upload indices */
+
+    glGenBuffers(1, &_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndices * sizeof(GLuint), index, GL_STATIC_DRAW);
 
     /* Bind vertex attributes */
 
-    glVertexArrayVertexBuffer(_vao, 0, _vbo, 0, sizeof(Vertex));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, position));
 
-    glEnableVertexArrayAttrib(_vao, 0);
-    glVertexArrayAttribFormat(_vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-    glVertexArrayAttribBinding(_vao, 0, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, texCoords));
 
-    glEnableVertexArrayAttrib(_vao, 1);
-    glVertexArrayAttribFormat(_vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoords));
-    glVertexArrayAttribBinding(_vao, 1, 0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, normal));
 
-    glEnableVertexArrayAttrib(_vao, 2);
-    glVertexArrayAttribFormat(_vao, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-    glVertexArrayAttribBinding(_vao, 2, 0);
+    glBindVertexArray(0);
 
-    /* Bind indices */
-
-    glVertexArrayElementBuffer(_vao, _ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     _nIndices = nIndices;
 }

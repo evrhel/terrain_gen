@@ -1,12 +1,9 @@
 #pragma once
 
+#include <glad/glad.h>
 #include <mutil/mutil.h>
 
 using namespace mutil;
-
-constexpr Vector3 kWorldUp = {0.0f, 1.0f, 0.0f};
-constexpr Vector3 kWorldRight = {1.0f, 0.0f, 0.0f};
-constexpr Vector3 kWorldForward = {0.0f, 0.0f, -1.0f};
 
 class Camera
 {
@@ -78,6 +75,8 @@ public:
     constexpr const Matrix4 &viewProj() const { return _viewProj; }
     constexpr const Matrix4 &invViewProj() const { return _invViewProj; }
 
+    void load();
+
     void update();
 
     Camera();
@@ -92,10 +91,13 @@ private:
     float _near, _far;
 
     bool _dirty;
+    GLuint _ubo;
 
     Vector3 _front, _right, _up;
 
     Matrix4 _view, _invView;
     Matrix4 _proj, _invProj;
     Matrix4 _viewProj, _invViewProj;
+
+    void upload() const;
 };
