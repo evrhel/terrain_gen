@@ -8,8 +8,11 @@ using namespace mutil;
 #define ATMOSPHERE_UNIFORM_BINDING 1
 
 constexpr Vector3 kWorldUp = {0.0f, 1.0f, 0.0f};
+constexpr Vector3 kWorldDown = {0.0f, -1.0f, 0.0f};
 constexpr Vector3 kWorldRight = {1.0f, 0.0f, 0.0f};
-constexpr Vector3 kWorldFront = {0.0f, 0.0f, -1.0f};
+constexpr Vector3 kWorldLeft = {-1.0f, 0.0f, 0.0f};
+constexpr Vector3 kWorldFront = {0.0f, 0.0f, 1.0f};
+constexpr Vector3 kWorldBack = {0.0f, 0.0f, -1.0f};
 
 constexpr Vector3 kDefaultNormal = {0.5f, 1.0f, 0.5f};
 

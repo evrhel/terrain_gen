@@ -92,35 +92,8 @@ void Texture2D::load(const char *filename)
     delete[] buf;
 }
 
-Texture2D &Texture2D::operator=(Texture2D &&other) noexcept
-{
-    if (this == &other)
-        return *this;
-
-    if (_texture)
-        glDeleteTextures(1, &_texture);
-
-    _texture = other._texture;
-    _width = other._width;
-    _height = other._height;
-
-    other._texture = 0;
-    other._width = 0;
-    other._height = 0;
-
-    return *this;
-}
-
 Texture2D::Texture2D() : _texture(0), _width(0), _height(0)
 {
-}
-
-Texture2D::Texture2D(Texture2D &&other) noexcept : _texture(other._texture),
-                                                   _width(other._width), _height(other._height)
-{
-    other._texture = 0;
-    other._width = 0;
-    other._height = 0;
 }
 
 Texture2D::~Texture2D()

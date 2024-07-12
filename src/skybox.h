@@ -5,10 +5,12 @@
 
 using namespace mutil;
 
+class Shader;
+
 class Skybox final
 {
 public:
-    void render() const;
+    void render(Shader *shader) const;
 
     void load();
 

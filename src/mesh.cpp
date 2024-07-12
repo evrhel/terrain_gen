@@ -1,6 +1,9 @@
 #include "mesh.h"
 
 #include <utility>
+#include <cassert>
+
+#include "shader.h"
 
 void Mesh::load(const Vertex *vertex, GLsizei nVertices, const GLuint *index, GLsizei nIndices)
 {
@@ -38,13 +41,53 @@ void Mesh::load(const Vertex *vertex, GLsizei nVertices, const GLuint *index, GL
     _nIndices = nIndices;
 }
 
-void Mesh::render() const
+void Mesh::render(Shader *shader) const
 {
     glBindVertexArray(_vao);
     glDrawElements(GL_TRIANGLES, _nIndices, GL_UNSIGNED_INT, 0);
 }
 
-void Mesh::update()
+void Mesh::retain()
+{
+    _refs++;
+}
+
+void Mesh::release()
+{
+    if (--_refs == 0)
+        delete this;
+}
+
+Mesh::Mesh() : _vao(0), _vbo(0), _ebo(0),
+               _nIndices(0),
+               _refs(1)
+{
+}
+
+Mesh::~Mesh()
+{
+    assert(_refs == 0);
+
+    if (_ebo)
+        glDeleteBuffers(1, &_ebo);
+
+    if (_vbo)
+        glDeleteBuffers(1, &_vbo);
+
+    if (_vao)
+        glDeleteVertexArrays(1, &_vao);
+}
+
+void RenderableMesh::render(Shader *shader) const
+{
+    shader->setMatrix4("uModel", _model);
+    shader->setMatrix4("uInvModel", _invModel);
+    shader->setMaterial(_material);
+
+    _mesh->render(shader);
+}
+
+void RenderableMesh::update()
 {
     if (!_dirty)
         return;
@@ -59,60 +102,29 @@ void Mesh::update()
     _dirty = false;
 }
 
-Mesh &Mesh::operator=(Mesh &&other) noexcept
+RenderableMesh::RenderableMesh(Mesh *mesh) : _mesh(mesh),
+                                             _enabled(true),
+                                             _position(0.0f), _rotation(), _scale(1.0f),
+                                             _dirty(true),
+                                             _refs(1)
 {
-    if (this == &other)
-        return *this;
-
-    if (_ebo)
-        glDeleteBuffers(1, &_ebo);
-
-    if (_vbo)
-        glDeleteBuffers(1, &_vbo);
-
-    if (_vao)
-        glDeleteVertexArrays(1, &_vao);
-
-    _vao = other._vao;
-    _vbo = other._vbo;
-    _ebo = other._ebo;
-    _nIndices = other._nIndices;
-
-    _material = std::move(other._material);
-
-    other._vbo = 0;
-    other._ebo = 0;
-    other._vao = 0;
-
-    return *this;
+    assert(mesh != nullptr);
+    mesh->retain();
 }
 
-Mesh::Mesh() : _vao(0), _vbo(0), _ebo(0),
-               _nIndices(0),
-               _scale(1.0f),
-               _dirty(true)
+RenderableMesh::~RenderableMesh()
 {
+    assert(_refs == 0);
+    _mesh->release();
 }
 
-Mesh::Mesh(Mesh &&other) noexcept : _vao(other._vao), _vbo(other._vbo), _ebo(other._ebo),
-                                    _nIndices(other._nIndices),
-                                    _material(std::move(other._material)),
-                                    _position(other._position),
-                                    _rotation(other._rotation),
-                                    _scale(other._scale),
-                                    _dirty(other._dirty),
-                                    _model(other._model), _invModel(other._invModel)
+void RenderableMesh::retain()
 {
+    _refs++;
 }
 
-Mesh::~Mesh()
+void RenderableMesh::release()
 {
-    if (_ebo)
-        glDeleteBuffers(1, &_ebo);
-
-    if (_vbo)
-        glDeleteBuffers(1, &_vbo);
-
-    if (_vao)
-        glDeleteVertexArrays(1, &_vao);
+    if (--_refs == 0)
+        delete this;
 }

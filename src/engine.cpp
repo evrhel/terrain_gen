@@ -17,17 +17,166 @@ static const Vector4 kQuadVertices[] = {
     Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
     Vector4(1.0f, -1.0f, 1.0f, 0.0f),
     Vector4(1.0f, 1.0f, 1.0f, 1.0f),
-    Vector4(-1.0f, 1.0f, 0.0f, 1.0f),
-};
+    Vector4(-1.0f, 1.0f, 0.0f, 1.0f)};
 
 static const GLuint kQuadIndices[] = {
-    0,
-    1,
-    2,
-    2,
-    3,
-    0,
-};
+    0, 1, 2,
+    2, 3, 0};
+
+static const Vertex kCubeVertices[] = {
+    /* Front */
+    Vertex{
+        Vector3(-0.5f, -0.5f, 0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(0.0f, 0.0f, 1.0f),
+    },
+    Vertex{
+        Vector3(0.5f, -0.5f, 0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(0.0f, 0.0f, 1.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, 0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(0.0f, 0.0f, 1.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, 0.5f, 0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(0.0f, 0.0f, 1.0f),
+    },
+    /* Back */
+    Vertex{
+        Vector3(-0.5f, -0.5f, -0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(0.0f, 0.0f, -1.0f),
+    },
+    Vertex{
+        Vector3(0.5f, -0.5f, -0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(0.0f, 0.0f, -1.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, -0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(0.0f, 0.0f, -1.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, 0.5f, -0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(0.0f, 0.0f, -1.0f),
+    },
+    /* Left */
+    Vertex{
+        Vector3(-0.5f, -0.5f, -0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(-1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, -0.5f, 0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(-1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, 0.5f, 0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(-1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, 0.5f, -0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(-1.0f, 0.0f, 0.0f),
+    },
+    /* Right */
+    Vertex{
+        Vector3(0.5f, -0.5f, -0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, -0.5f, 0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, 0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(1.0f, 0.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, -0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(1.0f, 0.0f, 0.0f),
+    },
+    /* Top */
+    Vertex{
+        Vector3(-0.5f, 0.5f, -0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(0.0f, 1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, -0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(0.0f, 1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, 0.5f, 0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(0.0f, 1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, 0.5f, 0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(0.0f, 1.0f, 0.0f),
+    },
+    /* Bottom */
+    Vertex{
+        Vector3(-0.5f, -0.5f, -0.5f),
+        Vector2(0.0f, 0.0f),
+        Vector3(0.0f, -1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, -0.5f, -0.5f),
+        Vector2(1.0f, 0.0f),
+        Vector3(0.0f, -1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(0.5f, -0.5f, 0.5f),
+        Vector2(1.0f, 1.0f),
+        Vector3(0.0f, -1.0f, 0.0f),
+    },
+    Vertex{
+        Vector3(-0.5f, -0.5f, 0.5f),
+        Vector2(0.0f, 1.0f),
+        Vector3(0.0f, -1.0f, 0.0f),
+    }};
+
+static const GLuint kCubeIndices[] = {
+    /* Front */
+    0, 1, 2,
+    2, 3, 0,
+    
+    /* Back */
+    6, 5, 4,
+    4, 7, 6,
+    
+    /* Left */
+    8, 9, 10,
+    10, 11, 8,
+    
+    /* Right */
+    14, 13, 12,
+    12, 15, 14,
+    
+    /* Top */
+    18, 17, 16,
+    16, 19, 18,
+    
+    /* Bottom */
+    20, 21, 22,
+    22, 23, 20};
+
+#define CUBE_INDEX_COUNT 36
 
 static SDL_Window *_window;
 static SDL_GLContext _gl;
@@ -49,8 +198,10 @@ static Shader *_shaders[SHADER_COUNT];
 
 static Camera *_camera;
 
-static std::vector<Mesh *> _meshes;
+static std::vector<RenderableMesh *> _meshes;
 static Skybox *_skybox;
+
+static Mesh *_cube;
 
 static bool pollEvents()
 {
@@ -195,8 +346,12 @@ void initAll(int argc, char *argv[])
     ImGui_ImplSDL3_InitForOpenGL(_window, _gl);
     ImGui_ImplOpenGL3_Init();
 
-    /* Default quad */
+    /* Default default primitives */
+
     createQuad();
+
+    _cube = new Mesh();
+    _cube->load(kCubeVertices, 24, kCubeIndices, CUBE_INDEX_COUNT);
 
     /* Enable vsync */
     SDL_GL_SetSwapInterval(1);
@@ -225,8 +380,8 @@ void quitAll()
 {
     /* Destroy in reverse order */
 
-    for (Mesh *mesh : _meshes)
-        delete mesh;
+    for (RenderableMesh *mesh : _meshes)
+        mesh->release();
     _meshes.clear();
 
     delete _skybox;
@@ -234,6 +389,8 @@ void quitAll()
     delete _camera;
 
     destroyShaders();
+
+    _cube->release();
 
     destroyQuad();
 
@@ -309,9 +466,6 @@ bool beginFrame()
     _deltaTime = time - _startFrameTime;
     _startFrameTime = time;
 
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-
     return pollEvents();
 }
 
@@ -319,6 +473,9 @@ void renderAll()
 {
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 
     /* Update */
     _camera->update();
@@ -329,13 +486,12 @@ void renderAll()
 
     /* Render meshes */
     glDepthFunc(GL_LESS);
-    for (Mesh *mesh : _meshes)
+    for (RenderableMesh *mesh : _meshes)
     {
         if (mesh->enabled())
         {
             mesh->update();
-            genericShader->setMatrix4("uModel", Matrix4(1.0f));
-            mesh->render();
+            mesh->render(genericShader);
         }
     }
 
@@ -344,7 +500,7 @@ void renderAll()
 
     /* Render skybox */
     glDepthFunc(GL_LEQUAL);
-    _skybox->render();
+    _skybox->render(skyboxShader);
 }
 
 void endFrame()
@@ -364,17 +520,26 @@ Camera *getCamera()
     return _camera;
 }
 
-const std::vector<Mesh *> &getMeshes()
+const std::vector<RenderableMesh *> &getMeshes()
 {
     return _meshes;
 }
 
-void addMesh(Mesh *mesh)
+void addMesh(RenderableMesh *mesh)
 {
-    _meshes.push_back(mesh);
+    if (mesh)
+    {
+        mesh->retain();
+        _meshes.push_back(mesh);
+    }
 }
 
 Skybox *getSkybox()
 {
     return _skybox;
+}
+
+Mesh *getCubeMesh()
+{
+    return _cube;
 }

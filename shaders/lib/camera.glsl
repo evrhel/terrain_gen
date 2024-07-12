@@ -16,6 +16,6 @@ layout (std140) uniform Camera
     mat4 proj;
     mat4 invProj;
 
-    mat4 viewProj;
-    mat4 invViewProj;
+    mat4 projView;
+    mat4 invProjView;
 } uCamera;

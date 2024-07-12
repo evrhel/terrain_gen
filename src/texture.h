@@ -16,12 +16,7 @@ public:
     constexpr int width() const { return _width; }
     constexpr int height() const { return _height; }
 
-    Texture2D &operator=(const Texture2D &) = delete;
-    Texture2D &operator=(Texture2D &&other) noexcept;
-
     Texture2D();
-    Texture2D(const Texture2D &) = delete;
-    Texture2D(Texture2D &&other) noexcept;
     ~Texture2D();
 
 private:

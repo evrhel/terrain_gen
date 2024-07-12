@@ -72,8 +72,8 @@ public:
     constexpr const Matrix4 &invView() const { return _invView; }
     constexpr const Matrix4 &proj() const { return _proj; }
     constexpr const Matrix4 &invProj() const { return _invProj; }
-    constexpr const Matrix4 &viewProj() const { return _viewProj; }
-    constexpr const Matrix4 &invViewProj() const { return _invViewProj; }
+    constexpr const Matrix4 &projView() const { return _projView; }
+    constexpr const Matrix4 &invProjView() const { return _invProjView; }
 
     void load();
 
@@ -97,7 +97,7 @@ private:
 
     Matrix4 _view, _invView;
     Matrix4 _proj, _invProj;
-    Matrix4 _viewProj, _invViewProj;
+    Matrix4 _projView, _invProjView;
 
     void upload() const;
 };

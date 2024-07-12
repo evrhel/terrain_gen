@@ -1,11 +1,15 @@
 #pragma once
 
+#include <cstddef>
+
 #include <glad/glad.h>
 #include <mutil/mutil.h>
 
 #include "material.h"
 
 using namespace mutil;
+
+class Shader;
 
 struct Vertex
 {
@@ -19,7 +23,25 @@ class Mesh
 public:
     void load(const Vertex *vertex, GLsizei nVertices, const GLuint *index, GLsizei nIndices);
 
-    void render() const;
+    void render(Shader *shader) const;
+
+    void retain();
+    void release();
+
+    Mesh();
+    ~Mesh();
+
+private:
+    GLuint _vao, _vbo, _ebo;
+    GLsizei _nIndices;
+
+    size_t _refs;
+};
+
+class RenderableMesh
+{
+public:
+    void render(Shader *shader) const;
 
     void update();
 
@@ -55,17 +77,14 @@ public:
     constexpr const Matrix4 &model() const { return _model; }
     constexpr const Matrix4 &invModel() const { return _invModel; }
 
-    Mesh &operator=(const Mesh &) = delete;
-    Mesh &operator=(Mesh &&other) noexcept;
+    void retain();
+    void release();
 
-    Mesh();
-    Mesh(const Mesh &) = delete;
-    Mesh(Mesh &&) noexcept;
-    ~Mesh();
+    RenderableMesh(Mesh *mesh);
+    ~RenderableMesh();
 
 private:
-    GLuint _vao, _vbo, _ebo;
-    GLsizei _nIndices;
+    Mesh *_mesh;
 
     bool _enabled;
 
@@ -77,4 +96,6 @@ private:
     bool _dirty;
 
     Matrix4 _model, _invModel;
+
+    size_t _refs;
 };

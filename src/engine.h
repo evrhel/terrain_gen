@@ -10,6 +10,7 @@
 using namespace mutil;
 
 class Mesh;
+class RenderableMesh;
 class Shader;
 class Skybox;
 class Camera;
@@ -50,7 +51,9 @@ Shader *getShader(ShaderID id);
 
 Camera *getCamera();
 
-const std::vector<Mesh *> &getMeshes();
-void addMesh(Mesh *mesh);
+const std::vector<RenderableMesh *> &getMeshes();
+void addMesh(RenderableMesh *mesh);
 
 Skybox *getSkybox();
+
+Mesh *getCubeMesh();

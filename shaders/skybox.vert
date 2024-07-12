@@ -12,6 +12,6 @@ out VS_OUT
 void main()
 {
     vs_out.FragPos = aPos;
-    gl_Position = uCamera.viewProj * vec4(aPos, 1.0);
+    gl_Position = uCamera.proj * mat4(mat3(uCamera.view)) * vec4(aPos, 1.0);
     gl_Position.z = gl_Position.w;
 }

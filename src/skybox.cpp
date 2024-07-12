@@ -47,7 +47,7 @@ static const unsigned int kSkyboxIndices[] = {
 
 #define SKYBOX_INDEX_COUNT 36
 
-void Skybox::render() const
+void Skybox::render(Shader *shader) const
 {
     glBindVertexArray(_vao);
     glDrawElements(GL_TRIANGLES, SKYBOX_INDEX_COUNT, GL_UNSIGNED_INT, 0);
@@ -97,8 +97,8 @@ void Skybox::update()
         return;
 
     /* Update sun direction */
-    Quaternion q1 = mutil::rotateaxis(kWorldRight, -mutil::radians(_altitude));
-    Quaternion q2 = mutil::rotateaxis(kWorldUp, mutil::radians(_azimuth));
+    Quaternion q1 = mutil::rotateaxis(kWorldUp, mutil::radians(_azimuth));
+    Quaternion q2 = mutil::rotateaxis(kWorldRight, mutil::radians(_altitude));
     Quaternion q = q1 * q2;
     _sunDirection = mutil::rotatevector(q, kWorldFront);
 

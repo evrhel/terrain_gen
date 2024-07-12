@@ -28,8 +28,8 @@ struct CameraGPU
     Matrix4 projection;
     Matrix4 invProjection;
 
-    Matrix4 viewProjection;
-    Matrix4 invViewProjection;
+    Matrix4 projView;
+    Matrix4 invProjView;
 };
 
 void Camera::load()
@@ -47,11 +47,12 @@ void Camera::update()
     if (!_dirty)
         return;
 
-    Quaternion q1 = rotateaxis(kWorldUp, -mutil::radians(_yaw));
-    Quaternion q2 = rotateaxis(kWorldRight, mutil::radians(_pitch));
-    Quaternion q = q1 * q2;
+    Quaternion q1 = mutil::rotateaxis(kWorldRight, mutil::radians(_pitch));
+    Quaternion q2 = mutil::rotateaxis(kWorldUp, mutil::radians(_yaw));
 
-    _front = rotatevector(q, kWorldFront);
+    Quaternion q = q2 * q1;
+
+    _front = rotatevector(q, kWorldBack);
     _right = cross(_front, kWorldUp);
     _up = cross(_right, _front);
 
@@ -61,8 +62,8 @@ void Camera::update()
     _proj = perspective(mutil::radians(_fov), _aspect, _near, _far);
     _invProj = inverse(_proj);
 
-    _viewProj = _proj * _view;
-    _invViewProj = inverse(_viewProj);
+    _projView = _proj * _view;
+    _invProjView = inverse(_projView);
 
     upload();
 
@@ -104,8 +105,8 @@ void Camera::upload() const
     cam->projection = _proj;
     cam->invProjection = _invProj;
 
-    cam->viewProjection = _viewProj;
-    cam->invViewProjection = _invViewProj;
+    cam->projView = _projView;
+    cam->invProjView = _invProjView;
 
     glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraGPU), buf);

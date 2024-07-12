@@ -20,5 +20,5 @@ void main()
     vs_out.FragPos = aPos;
     vs_out.Normal = normalize(transpose(inverse(mat3(uModel))) * aNormal);
     vs_out.TexCoords = aTexCoords;
-    gl_Position = uCamera.viewProj * uModel * vec4(aPos, 1.0);
+    gl_Position = uCamera.projView * uModel * vec4(aPos, 1.0);
 }

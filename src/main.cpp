@@ -2,9 +2,11 @@
 
 #include "camera.h"
 #include "skybox.h"
+#include "mesh.h"
+#include "util.h"
 
-static constexpr Vector3 kMoveSpeed = Vector3(1.0f);
-static constexpr float kTurnSpeed = 45.0f;
+static constexpr float kMoveSpeed = 4.0f;
+static constexpr float kTurnSpeed = 90.0f;
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +18,9 @@ int main(int argc, char *argv[])
     skybox->setSunColor(Vector3(1.0f));
     skybox->setSunIntensity(1.0f);
     skybox->setSunTightness(500.0f);
+
+    RenderableMesh *cube = new RenderableMesh(getCubeMesh());
+    addMesh(cube);
 
     while (beginFrame())
     {
@@ -32,9 +37,9 @@ int main(int argc, char *argv[])
 
         float yaw = camera->yaw();
         if (getKey(SDL_SCANCODE_LEFT))
-            yaw -= kTurnSpeed * dt;
-        if (getKey(SDL_SCANCODE_RIGHT))
             yaw += kTurnSpeed * dt;
+        if (getKey(SDL_SCANCODE_RIGHT))
+            yaw -= kTurnSpeed * dt;
         camera->setYaw(yaw);
 
         Vector3 position = camera->position();
@@ -46,6 +51,10 @@ int main(int argc, char *argv[])
             position -= kMoveSpeed * dt * camera->right();
         if (getKey(SDL_SCANCODE_D))
             position += kMoveSpeed * dt * camera->right();
+        if (getKey(SDL_SCANCODE_E))
+            position += kMoveSpeed * dt * kWorldUp;
+        if (getKey(SDL_SCANCODE_Q))
+            position -= kMoveSpeed * dt * kWorldUp;
         camera->setPosition(position);
 
         printf("(%f, %f, %f) (%f, %f)\n", position.x, position.y, position.z, pitch, yaw);
@@ -53,6 +62,8 @@ int main(int argc, char *argv[])
         renderAll();
         endFrame();
     }
+
+    cube->release();
 
     quitAll();
     return 0;
