@@ -176,6 +176,7 @@ static const GLuint kCubeIndices[] = {
     20, 21, 22,
     22, 23, 20};
 
+#define CUBE_VERTEX_COUNT 24
 #define CUBE_INDEX_COUNT 36
 
 static SDL_Window *_window;
@@ -351,7 +352,7 @@ void initAll(int argc, char *argv[])
     createQuad();
 
     _cube = new Mesh();
-    _cube->load(kCubeVertices, 24, kCubeIndices, CUBE_INDEX_COUNT);
+    _cube->load(kCubeVertices, CUBE_VERTEX_COUNT, kCubeIndices, CUBE_INDEX_COUNT);
 
     /* Enable vsync */
     SDL_GL_SetSwapInterval(1);

@@ -24,6 +24,7 @@ void main()
     Albedo = vec4(color, 1.0);
     Emissive = vec4(0.0, 0.0, 0.0, 1.0);
     PositionOut = vec4(fs_in.FragPos, 1.0);
+    DepthOut = vec4(gl_FragCoord.zzz, 1.0);
     NormalOut = vec4(0.0, 0.0, 0.0, 1.0);
     MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
 }
