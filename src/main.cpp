@@ -17,14 +17,24 @@ int main(int argc, char *argv[])
     initAll(argc, argv);
 
     Skybox *skybox = getSkybox();
-    skybox->setSunAltitude(45.0f);
-    skybox->setSunAzimuth(0.0f);
+    skybox->setSunAltitude(25.0f);
+    skybox->setSunAzimuth(15.0f);
     skybox->setSunColor(Vector3(1.0f));
     skybox->setSunIntensity(1.0f);
     skybox->setSunTightness(500.0f);
 
+    skybox->setHorizonColor(colorRGB(135, 206, 235));
+    skybox->setZenithColor(colorRGB(70, 130, 180));
+
     RenderableMesh *cube = new RenderableMesh(getCubeMesh());
     addMesh(cube);
+
+    cube->setScale(Vector3(10.0f, 1.0f, 10.0f));
+
+    Material *material = cube->getMaterial();
+    material->albedoColor = colorRGB(255, 127, 127);
+    material->roughnessValue = 0.5f;
+    material->aoValue = 1.0f;
 
     while (beginFrame())
     {
@@ -87,6 +97,7 @@ static void debugWindow()
     ImGui::InputFloat("Yaw", (float *)camera->getYaw(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
     ImGui::InputFloat("Near", (float *)camera->getNear(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
     ImGui::InputFloat("Far", (float *)camera->getFar(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputFloat3("Front", (float *)&camera->front(), "%.3f", ImGuiInputTextFlags_ReadOnly);
 
     ImGui::SeparatorText("Visualizer");
 

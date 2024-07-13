@@ -168,17 +168,17 @@ void Shader::setMaterial(const Material &material)
     /* Roughness */
     setTexture("uMaterial.roughness.tex", material.roughness.get(), 3);
     setBool("uMaterial.roughness.hasTex", material.roughness.get() != 0);
-    setFloat("uMaterial.roughness.value", material.roughnessValue);
+    setVector3("uMaterial.roughness.color", Vector3(material.roughnessValue));
 
     /* Metallic */
     setTexture("uMaterial.metallic.tex", material.metallic.get(), 4);
     setBool("uMaterial.metallic.hasTex", material.metallic.get() != 0);
-    setFloat("uMaterial.metallic.value", material.metallicValue);
+    setVector3("uMaterial.metallic.color", Vector3(material.metallicValue));
 
     /* AO */
     setTexture("uMaterial.ao.tex", material.ao.get(), 5);
     setBool("uMaterial.ao.hasTex", material.ao.get() != 0);
-    setFloat("uMaterial.ao.value", material.aoValue);
+    setVector3("uMaterial.ao.color", Vector3(material.aoValue));
 }
 
 void Shader::setGbuffer(const Gbuffer *gbuffer)
