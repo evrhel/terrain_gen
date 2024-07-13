@@ -5,8 +5,12 @@
 #include "mesh.h"
 #include "util.h"
 
+#include <imgui.h>
+
 static constexpr float kMoveSpeed = 4.0f;
 static constexpr float kTurnSpeed = 90.0f;
+
+static void debugWindow();
 
 int main(int argc, char *argv[])
 {
@@ -57,7 +61,9 @@ int main(int argc, char *argv[])
             position -= kMoveSpeed * dt * kWorldUp;
         camera->setPosition(position);
 
-        printf("(%f, %f, %f) (%f, %f)\n", position.x, position.y, position.z, pitch, yaw);
+        // printf("(%f, %f, %f) (%f, %f)\n", position.x, position.y, position.z, pitch, yaw);
+
+        debugWindow();
 
         renderAll();
         endFrame();
@@ -67,4 +73,26 @@ int main(int argc, char *argv[])
 
     quitAll();
     return 0;
+}
+
+static void debugWindow()
+{
+    ImGui::Begin("Debug");
+
+    ImGui::SeparatorText("Camera");
+
+    Camera *camera = getCamera();
+    ImGui::InputFloat3("Position", (float *)&camera->position(), "%.3f", ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputFloat("Pitch", (float *)camera->getPitch(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputFloat("Yaw", (float *)camera->getYaw(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputFloat("Near", (float *)camera->getNear(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputFloat("Far", (float *)camera->getFar(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+
+    ImGui::SeparatorText("Visualizer");
+
+    static int visualizeMode = VISUALIZE_NONE;
+    ImGui::SliderInt("Mode", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
+    setVisualizeMode((VisualizeMode)visualizeMode);
+
+    ImGui::End();
 }

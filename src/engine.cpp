@@ -200,6 +200,7 @@ static IntVector2 _mousePosition;
 static Shader *_shaders[SHADER_COUNT];
 static Gbuffer *_gbuffer;
 static Compositor *_compositors[COMPOSITOR_COUNT];
+static Compositor *_visualizer;
 
 static Camera *_camera;
 
@@ -207,6 +208,8 @@ static std::vector<RenderableMesh *> _meshes;
 static Skybox *_skybox;
 
 static Mesh *_cube;
+
+static VisualizeMode _visualizeMode = VISUALIZE_NONE;
 
 static bool pollEvents()
 {
@@ -289,6 +292,7 @@ namespace
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
+#include <shaders/visualize.frag.h>
 }
 
 static void loadShaders()
@@ -309,6 +313,9 @@ static void loadShaders()
 
     Shader *skybox = getShader(SHADER_SKYBOX);
     skybox->load("skybox", skybox_vert_source, skybox_frag_source);
+
+    Shader *visualize = getShader(SHADER_VISUALIZE);
+    visualize->load("visualize", screen_vert_source, visualize_frag_source);
 }
 
 static void destroyShaders()
@@ -338,9 +345,14 @@ static void loadCompositors(GLsizei width, GLsizei height)
     compositor2->load(nullptr, 0); // No outputs, go to screen
     _compositors[COMPOSITOR2] = compositor2;
 
+    /* Visualizer */
+    _visualizer = new Compositor();
+    _visualizer->load(nullptr, 0); // No outputs, go to screen
+
     /* Initial resize */
     for (int i = 0; i < COMPOSITOR_COUNT; i++)
         _compositors[i]->resize(width, height);
+    _visualizer->resize(width, height);
 }
 
 static void destroyCompositors()
@@ -520,6 +532,10 @@ bool beginFrame()
     _deltaTime = time - _startFrameTime;
     _startFrameTime = time;
 
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
     return pollEvents();
 }
 
@@ -564,27 +580,39 @@ void renderAll()
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glClearColor(0.0f, 1.0f, 0.0f, 1.0);
 
-    Compositor *lastCompositor = nullptr;
-    for (int i = 0; i < COMPOSITOR_COUNT; i++)
+    if (_visualizeMode == VISUALIZE_NONE)
     {
-        Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
-        s->use();
+        Compositor *lastCompositor = nullptr;
+        for (int i = 0; i < COMPOSITOR_COUNT; i++)
+        {
+            Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
+            s->use();
 
-        Compositor *c = _compositors[i];
-        c->bind();
+            Compositor *c = _compositors[i];
+            c->bind();
 
-        glClear(GL_COLOR_BUFFER_BIT);
+            c->render(s, _gbuffer, lastCompositor);
 
-        c->render(s, _gbuffer, lastCompositor);
+            lastCompositor = c;
+        }
+    }
+    else
+    {
+        Shader *visualizeShader = getShader(SHADER_VISUALIZE);
+        visualizeShader->use();
+        visualizeShader->setInt("uMode", _visualizeMode);
 
-        lastCompositor = c;
+        _visualizer->bind();
+        _visualizer->render(visualizeShader, _gbuffer, nullptr);
     }
 }
 
 void endFrame()
 {
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
     SDL_GL_SwapWindow(_window);
 }
 
@@ -633,4 +661,14 @@ Skybox *getSkybox()
 Mesh *getCubeMesh()
 {
     return _cube;
+}
+
+VisualizeMode getVisualizeMode()
+{
+    return _visualizeMode;
+}
+
+void setVisualizeMode(VisualizeMode mode)
+{
+    _visualizeMode = mode;
 }

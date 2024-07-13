@@ -79,6 +79,9 @@ set(SKYBOX_VERT_FILE ${SHADER_SRC_DIR}/skybox.vert)
 set(SKYBOX_VERT_HEADER ${SHADER_OUT_DIR}/skybox.vert.h)
 set(SKYBOX_VERT_NAME skybox_vert_source)
 
+set(VISUALIZE_FRAG_FILE ${SHADER_SRC_DIR}/visualize.frag)
+set(VISUALIZE_FRAG_HEADER ${SHADER_OUT_DIR}/visualize.frag.h)
+set(VISUALIZE_FRAG_NAME visualize_frag_source)
 
 add_custom_command(
 	OUTPUT ${COMPOSITE1_FRAG_HEADER}
@@ -129,6 +132,13 @@ add_custom_command(
 	COMMENT "Generating ${SKYBOX_VERT_HEADER}"
 )
 
+add_custom_command(
+	OUTPUT ${VISUALIZE_FRAG_HEADER}
+	COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DINPUT_FILE=${VISUALIZE_FRAG_FILE} -DOUTPUT_FILE=${VISUALIZE_FRAG_HEADER} -DVARIABLE_NAME=${VISUALIZE_FRAG_NAME} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/shader_to_header.cmake
+	DEPENDS ${VISUALIZE_FRAG_FILE}
+	COMMENT "Generating ${VISUALIZE_FRAG_HEADER}"
+)
+
 add_custom_target(generate_terrain_gen_shaders DEPENDS
     ${COMPOSITE1_FRAG_HEADER}
 	${COMPOSITE2_FRAG_HEADER}
@@ -137,6 +147,7 @@ add_custom_target(generate_terrain_gen_shaders DEPENDS
     ${SCREEN_VERT_HEADER}
     ${SKYBOX_FRAG_HEADER}
     ${SKYBOX_VERT_HEADER}
+	${VISUALIZE_FRAG_HEADER}
 )
 
 add_dependencies(terrain_gen generate_terrain_gen_shaders)

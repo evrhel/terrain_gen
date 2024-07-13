@@ -17,6 +17,7 @@ public:
     }
 
     constexpr float pitch() const { return _pitch; }
+    constexpr const float *getPitch() const { return &_pitch; }
 
     constexpr void setPitch(float pitch)
     {
@@ -25,6 +26,7 @@ public:
     }
 
     constexpr float yaw() const { return _yaw; }
+    constexpr const float *getYaw() const { return &_yaw; }
 
     constexpr void setYaw(float yaw)
     {
@@ -33,6 +35,7 @@ public:
     }
 
     constexpr float fov() const { return _fov; }
+    constexpr const float *getFov() const { return &_fov; }
 
     constexpr void setFov(float fov)
     {
@@ -49,6 +52,7 @@ public:
     }
 
     constexpr float near() const { return _near; }
+    constexpr const float *getNear() const { return &_near; }
 
     constexpr void setNear(float near)
     {
@@ -57,6 +61,7 @@ public:
     }
 
     constexpr float far() const { return _far; }
+    constexpr const float *getFar() const { return &_far; }
 
     constexpr void setFar(float far)
     {

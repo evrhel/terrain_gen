@@ -25,6 +25,8 @@ enum ShaderID
     SHADER_GENERIC,
     SHADER_SKYBOX,
 
+    SHADER_VISUALIZE,
+
     SHADER_COUNT
 };
 
@@ -34,6 +36,17 @@ enum CompositorID
     COMPOSITOR2,
 
     COMPOSITOR_COUNT
+};
+
+enum VisualizeMode
+{
+    VISUALIZE_NONE,
+    VISUALIZE_ALBEDO,
+    VISUALIZE_EMISSIVE,
+    VISUALIZE_POSITION,
+    VISUALIZE_DEPTH,
+    VISUALIZE_NORMAL,
+    VISUALIZE_MATERIAL
 };
 
 void initAll(int argc, char *argv[]);
@@ -69,3 +82,6 @@ void addMesh(RenderableMesh *mesh);
 Skybox *getSkybox();
 
 Mesh *getCubeMesh();
+
+VisualizeMode getVisualizeMode();
+void setVisualizeMode(VisualizeMode mode);
