@@ -10,31 +10,37 @@
 static constexpr float kMoveSpeed = 4.0f;
 static constexpr float kTurnSpeed = 90.0f;
 
+static constexpr float kSunAltitude = 25.0f;
+static constexpr float kSunAzimuth = 15.0f;
+static constexpr Vector3 kSunColor = Vector3(1.0f);
+static constexpr float kSunIntensity = 1.0f;
+static constexpr float kSunTightness = 500.0f;
+static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
+static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
+
+static constexpr Vector3 kAlbedoColor = colorRGB(255, 127, 127);
+static constexpr float kRoughness = 0.5f;
+static constexpr float kMetallic = 0.0f;
+static constexpr float kAo = 1.0f;
+
+static RenderableMesh *cube;
+
 static void debugWindow();
 
 int main(int argc, char *argv[])
 {
     initAll(argc, argv);
 
-    Skybox *skybox = getSkybox();
-    skybox->setSunAltitude(25.0f);
-    skybox->setSunAzimuth(15.0f);
-    skybox->setSunColor(Vector3(1.0f));
-    skybox->setSunIntensity(1.0f);
-    skybox->setSunTightness(500.0f);
-
-    skybox->setHorizonColor(colorRGB(135, 206, 235));
-    skybox->setZenithColor(colorRGB(70, 130, 180));
-
-    RenderableMesh *cube = new RenderableMesh(getCubeMesh());
+    cube = new RenderableMesh(getCubeMesh());
     addMesh(cube);
 
     cube->setScale(Vector3(10.0f, 1.0f, 10.0f));
 
     Material *material = cube->getMaterial();
-    material->albedoColor = colorRGB(255, 127, 127);
-    material->roughnessValue = 0.5f;
-    material->aoValue = 1.0f;
+    material->albedoColor = kAlbedoColor;
+    material->roughnessValue = kRoughness;
+    material->metallicValue = kMetallic;
+    material->aoValue = kAo;
 
     while (beginFrame())
     {
@@ -71,8 +77,6 @@ int main(int argc, char *argv[])
             position -= kMoveSpeed * dt * kWorldUp;
         camera->setPosition(position);
 
-        // printf("(%f, %f, %f) (%f, %f)\n", position.x, position.y, position.z, pitch, yaw);
-
         debugWindow();
 
         renderAll();
@@ -87,23 +91,112 @@ int main(int argc, char *argv[])
 
 static void debugWindow()
 {
+    static int visualizeMode = VISUALIZE_NONE;
+
+    static float sunAltitude = kSunAltitude;
+    static float sunAzimuth = kSunAzimuth;
+    static Vector3 sunColor = kSunColor;
+    static float sunIntensity = kSunIntensity;
+    static float sunTightness = kSunTightness;
+    static Vector3 horizonColor = kHorizonColor;
+    static Vector3 zenithColor = kZenithColor;
+
+    static Vector3 albedoColor = kAlbedoColor;
+    static float roughness = kRoughness;
+    static float metallic = kMetallic;
+    static float ao = kAo;
+
+    Skybox *skybox = getSkybox();
+    Material *material = cube->getMaterial();
+
     ImGui::Begin("Debug");
 
-    ImGui::SeparatorText("Camera");
+    if (ImGui::BeginTabBar("Debug"))
+    {
+        if (ImGui::BeginTabItem("General"))
+        {
+            ImGui::SeparatorText("Performance");
 
-    Camera *camera = getCamera();
-    ImGui::InputFloat3("Position", (float *)&camera->position(), "%.3f", ImGuiInputTextFlags_ReadOnly);
-    ImGui::InputFloat("Pitch", (float *)camera->getPitch(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-    ImGui::InputFloat("Yaw", (float *)camera->getYaw(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-    ImGui::InputFloat("Near", (float *)camera->getNear(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-    ImGui::InputFloat("Far", (float *)camera->getFar(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-    ImGui::InputFloat3("Front", (float *)&camera->front(), "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::LabelText("Frame Time", "%.3f ms", deltaTime() * 1000.0f);
 
-    ImGui::SeparatorText("Visualizer");
+            ImGui::EndTabItem();
+        }
 
-    static int visualizeMode = VISUALIZE_NONE;
-    ImGui::SliderInt("Mode", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
-    setVisualizeMode((VisualizeMode)visualizeMode);
+        if (ImGui::BeginTabItem("Camera"))
+        {
+            ImGui::SeparatorText("Camera");
+
+            Camera *camera = getCamera();
+            ImGui::InputFloat3("Position", (float *)&camera->position(), "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputFloat("Pitch", (float *)camera->getPitch(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputFloat("Yaw", (float *)camera->getYaw(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputFloat("Near", (float *)camera->getNear(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputFloat("Far", (float *)camera->getFar(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputFloat3("Front", (float *)&camera->front(), "%.3f", ImGuiInputTextFlags_ReadOnly);
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Debug"))
+        {
+            ImGui::SeparatorText("Visualizer");
+
+            ImGui::SliderInt("Mode", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Atmosphere"))
+        {
+            ImGui::PushID("Sun");
+            ImGui::SeparatorText("Sun");
+
+            ImGui::SliderFloat("Altitude", &sunAltitude, 0.0f, 360.0f);
+            ImGui::SliderFloat("Azimuth", &sunAzimuth, 0.0f, 360.0f);
+            ImGui::ColorEdit3("Color", (float *)&sunColor);
+            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 10.0f);
+
+            ImGui::PopID();
+
+            ImGui::PushID("Sky");
+            ImGui::SeparatorText("Sky");
+
+            ImGui::ColorEdit3("Horizon Color", (float *)&horizonColor);
+            ImGui::ColorEdit3("Zenith Color", (float *)&zenithColor);
+            ImGui::SliderFloat("Sun Tightness", &sunTightness, 0.0f, 1000.0f);
+
+            ImGui::PopID();
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Material"))
+        {
+            ImGui::ColorEdit3("Albedo", (float *)&albedoColor);
+            ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
+            ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
+            ImGui::SliderFloat("Ao", &ao, 0.0f, 1.0f);
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
 
     ImGui::End();
+
+    setVisualizeMode((VisualizeMode)visualizeMode);
+
+    skybox->setSunAltitude(sunAltitude);
+    skybox->setSunAzimuth(sunAzimuth);
+    skybox->setSunColor(sunColor);
+    skybox->setSunIntensity(sunIntensity);
+    skybox->setSunTightness(sunTightness);
+    skybox->setHorizonColor(horizonColor);
+    skybox->setZenithColor(zenithColor);
+
+    material->albedoColor = albedoColor;
+    material->roughnessValue = roughness;
+    material->metallicValue = metallic;
+    material->aoValue = ao;
 }

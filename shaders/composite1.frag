@@ -22,7 +22,7 @@ float distributionGGX(vec3 N, vec3 H, float roughness)
     float denom = NdotH2 * (a2 - 1.0) + 1.0;
     denom = kPI * denom * denom;
 
-    return num / max(denom, 0.001);
+    return num / denom;
 }
 
 float geometrySchlickGGX(float NdotV, float roughness)
@@ -64,7 +64,7 @@ vec3 calcSun(vec3 fragPos, vec3 N, float metallic, float roughness, vec3 albedo)
     float G = geometrySmith(N, V, L, roughness);
 
     vec3 num = NDF * G * F;
-    float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
     vec3 specular = num / denom;
 
     vec3 kS = F;
@@ -112,7 +112,7 @@ void main()
     vec3 ambient = kD * diffuse;// * ao;
 
     /* Final color */
-    vec3 color = lighting;
+    vec3 color = lighting + ambient;
 
     Color0 = vec4(color, 1.0);
 
