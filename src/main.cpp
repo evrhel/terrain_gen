@@ -8,7 +8,8 @@
 
 #include <imgui.h>
 
-static constexpr float kMoveSpeed = 4.0f;
+static constexpr float kMoveSpeed = 10.0f;
+static constexpr float kShiftMultiplier = 5.0f;
 static constexpr float kTurnSpeed = 90.0f;
 
 static constexpr float kSunAltitude = 25.0f;
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
     material->aoValue = kAo;
 
     terrain = new Terrain();
-    terrain->load("assets/iceland_heightmap.png", 20);
+    terrain->load("assets/iceland_heightmap.png", 20, 64.0f);
     addTerrain(terrain);
 
     Camera *camera = getCamera();
@@ -71,18 +72,19 @@ int main(int argc, char *argv[])
         camera->setYaw(yaw);
 
         Vector3 position = camera->position();
+        float moveSpeed = getKey(SDL_SCANCODE_LSHIFT) ? kMoveSpeed * kShiftMultiplier : kMoveSpeed;
         if (getKey(SDL_SCANCODE_W))
-            position += kMoveSpeed * dt * camera->front();
+            position += moveSpeed * dt * camera->front();
         if (getKey(SDL_SCANCODE_S))
-            position -= kMoveSpeed * dt * camera->front();
+            position -= moveSpeed * dt * camera->front();
         if (getKey(SDL_SCANCODE_A))
-            position -= kMoveSpeed * dt * camera->right();
+            position -= moveSpeed * dt * camera->right();
         if (getKey(SDL_SCANCODE_D))
-            position += kMoveSpeed * dt * camera->right();
+            position += moveSpeed * dt * camera->right();
         if (getKey(SDL_SCANCODE_E))
-            position += kMoveSpeed * dt * kWorldUp;
+            position += moveSpeed * dt * kWorldUp;
         if (getKey(SDL_SCANCODE_Q))
-            position -= kMoveSpeed * dt * kWorldUp;
+            position -= moveSpeed * dt * kWorldUp;
         camera->setPosition(position);
 
         debugWindow();
@@ -101,6 +103,7 @@ int main(int argc, char *argv[])
 static void debugWindow()
 {
     static int visualizeMode = VISUALIZE_NONE;
+    static bool wireframe = false;
 
     static float sunAltitude = kSunAltitude;
     static float sunAzimuth = kSunAzimuth;
@@ -116,7 +119,8 @@ static void debugWindow()
     static float ao = kAo;
 
     Skybox *skybox = getSkybox();
-    Material *material = cube->getMaterial();
+    Material *cubeMaterial = cube->getMaterial();
+    Material *terrainMaterial = terrain->getMaterial();
 
     ImGui::Begin("Debug");
 
@@ -148,9 +152,11 @@ static void debugWindow()
 
         if (ImGui::BeginTabItem("Debug"))
         {
-            ImGui::SeparatorText("Visualizer");
+            ImGui::SeparatorText("Debug");
 
-            ImGui::SliderInt("Mode", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
+            ImGui::SliderInt("Buffer", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
+
+            ImGui::Checkbox("Wireframe", &wireframe);
 
             ImGui::EndTabItem();
         }
@@ -195,6 +201,7 @@ static void debugWindow()
     ImGui::End();
 
     setVisualizeMode((VisualizeMode)visualizeMode);
+    setWireframe(wireframe);
 
     skybox->setSunAltitude(sunAltitude);
     skybox->setSunAzimuth(sunAzimuth);
@@ -204,8 +211,13 @@ static void debugWindow()
     skybox->setHorizonColor(horizonColor);
     skybox->setZenithColor(zenithColor);
 
-    material->albedoColor = albedoColor;
-    material->roughnessValue = roughness;
-    material->metallicValue = metallic;
-    material->aoValue = ao;
+    cubeMaterial->albedoColor = albedoColor;
+    cubeMaterial->roughnessValue = roughness;
+    cubeMaterial->metallicValue = metallic;
+    cubeMaterial->aoValue = ao;
+
+    terrainMaterial->albedoColor = albedoColor;
+    terrainMaterial->roughnessValue = roughness;
+    terrainMaterial->metallicValue = metallic;
+    terrainMaterial->aoValue = ao;
 }

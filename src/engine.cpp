@@ -212,6 +212,7 @@ static Skybox *_skybox;
 static Mesh *_cube;
 
 static VisualizeMode _visualizeMode = VISUALIZE_NONE;
+static bool _wireframe = false;
 
 static bool pollEvents()
 {
@@ -562,17 +563,23 @@ void renderAll()
 
     _gbuffer->bind();
 
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    if (_wireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     /* Render meshes */
 
     Shader *genericShader = getShader(SHADER_GENERIC);
     genericShader->use();
+
+    genericShader->setBool("uWireframe", _wireframe);
 
     glDepthFunc(GL_LESS);
     for (RenderableMesh *mesh : _meshes)
@@ -586,10 +593,10 @@ void renderAll()
 
     /* Render terrains */
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     Shader *terrainShader = getShader(SHADER_TERRAIN);
     terrainShader->use();
+
+    terrainShader->setBool("uWireframe", _wireframe);
 
     for (Terrain *terrain : _terrains)
     {
@@ -599,7 +606,8 @@ void renderAll()
         }
     }
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    if (_wireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     /* Render skybox */
 
@@ -718,4 +726,14 @@ VisualizeMode getVisualizeMode()
 void setVisualizeMode(VisualizeMode mode)
 {
     _visualizeMode = mode;
+}
+
+bool getWireframe()
+{
+    return _wireframe;
+}
+
+void setWireframe(bool enabled)
+{
+    _wireframe = enabled;
 }

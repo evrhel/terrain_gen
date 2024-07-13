@@ -15,6 +15,17 @@ uniform Material uMaterial;
 
 void main()
 {
+    if (uWireframe)
+    {
+        Albedo = vec4(0.0, 0.0, 0.0, 1.0);
+        Emissive = vec4(1.0);
+        PositionOut = vec4(fs_in.FragPos, 1.0);
+        DepthOut = vec4(gl_FragCoord.zzz, 1.0);
+        NormalOut = vec4(fs_in.Normal, 1.0);
+        MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
     vec4 albedo = sampleTexture(uMaterial.albedo, fs_in.TexCoords);
     if (albedo.a < 0.5)
         discard;

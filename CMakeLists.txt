@@ -44,6 +44,7 @@ target_link_libraries(terrain_gen PRIVATE liblysys)
 
 target_include_directories(terrain_gen PRIVATE ${SDL3_SOURCE_DIR}/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/glad/include)
+target_include_directories(terrain_gen PRIVATE thirdparty/half-2.2.0/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/MatrixUtil/MatrixUtil/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/imgui)
 target_include_directories(terrain_gen PRIVATE thirdparty/stb/include)

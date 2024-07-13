@@ -90,3 +90,6 @@ Mesh *getCubeMesh();
 
 VisualizeMode getVisualizeMode();
 void setVisualizeMode(VisualizeMode mode);
+
+bool getWireframe();
+void setWireframe(bool enabled);

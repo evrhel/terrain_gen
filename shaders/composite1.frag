@@ -22,7 +22,7 @@ float distributionGGX(vec3 N, vec3 H, float roughness)
     float denom = NdotH2 * (a2 - 1.0) + 1.0;
     denom = kPI * denom * denom;
 
-    return num / denom;
+    return num / max(denom, 0.00001);
 }
 
 float geometrySchlickGGX(float NdotV, float roughness)
@@ -33,7 +33,7 @@ float geometrySchlickGGX(float NdotV, float roughness)
     float num = NdotV;
     float denom = NdotV * (1.0 - k) + k;
 
-    return num / denom;
+    return num / max(denom, 0.00001);
 }
 
 float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
@@ -65,7 +65,7 @@ vec3 calcSun(vec3 fragPos, vec3 N, float metallic, float roughness, vec3 albedo)
 
     vec3 num = NDF * G * F;
     float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular = num / denom;
+    vec3 specular = num / max(denom, 0.00001);
 
     vec3 kS = F;
     vec3 kD = 1.0 - kS;

@@ -5,10 +5,19 @@
 layout (quads, fractional_odd_spacing, cw) in;
 
 uniform sampler2D uHeightmap;
+uniform sampler2D uNormalmap;
+uniform float uScale;
 uniform mat4 uModel;
 
 in vec2 TexCoords[];
-out float Height;
+
+out TES_OUT
+{
+    float Height;
+    vec3 FragPos;
+    vec2 TexCoords;
+    vec3 Normal;
+} tes_out;
 
 void main()
 {
@@ -24,7 +33,7 @@ void main()
     vec2 t1 = (t11 - t10) * u + t10;
     vec2 texCoord = (t1 - t0) * v + t0;
 
-    Height = texture(uHeightmap, texCoord).r * 64.0 - 16.0;
+    tes_out.Height = texture(uHeightmap, texCoord).r * uScale - 16.0;
 
     vec4 p00 = gl_in[0].gl_Position;
     vec4 p01 = gl_in[1].gl_Position;
@@ -33,11 +42,19 @@ void main()
 
     vec4 uVec = p01 - p00;
     vec4 vVec = p10 - p00;
-    vec4 normal = normalize(vec4(cross(vVec.xyz, uVec.xyz), 0));
+    vec4 normal = normalize(vec4(cross(vVec.xyz, uVec.xyz), 0)); // Not same as surface normal, used for displacement
 
     vec4 p0 = (p01 - p00) * u + p00;
     vec4 p1 = (p11 - p10) * u + p10;
-    vec4 p = (p1 - p0) * v + p0 + normal * Height;
+    vec4 p = (p1 - p0) * v + p0 + normal * tes_out.Height;
 
-    gl_Position = uCamera.projView * uModel * p;
+    /* Surface normal */
+    tes_out.Normal = texture(uNormalmap, texCoord).xyz;
+    //tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
+
+    tes_out.FragPos = vec3(uModel * p);
+
+    tes_out.TexCoords = vec2(0.0);
+
+    gl_Position = uCamera.projView * vec4(tes_out.FragPos, 1.0);
 }

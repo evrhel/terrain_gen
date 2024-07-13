@@ -6,6 +6,8 @@
 
 #include <mutil/mutil.h>
 
+#include "material.h"
+
 using namespace mutil;
 
 class Shader;
@@ -21,7 +23,7 @@ class Terrain
 public:
     void render(Shader *shader) const;
 
-    void load(const char *heightmap, uint32_t resolution);
+    void load(const char *heightmap, uint32_t resolution, float scale);
 
     void retain();
     void release();
@@ -29,15 +31,23 @@ public:
     constexpr bool enabled() const { return _enabled; }
     constexpr void setEnabled(bool enabled) { _enabled = enabled; }
 
+    constexpr Material *getMaterial() { return &_material; }
+
     Terrain();
     ~Terrain();
 
 private:
     GLuint _vao, _vbo;
-    GLuint _heightmap;
     GLsizei _nVertices;
+
+    GLuint _heightmap;
+    GLuint _normalMap;
+
+    float _scale;
 
     size_t _refs;
 
     bool _enabled;
+
+    Material _material;
 };
