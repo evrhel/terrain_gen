@@ -14,6 +14,7 @@
 #include "util.h"
 #include "composite.h"
 #include "gbuffer.h"
+#include "terrain.h"
 
 static const Vector4 kQuadVertices[] = {
     Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
@@ -205,6 +206,7 @@ static Compositor *_visualizer;
 static Camera *_camera;
 
 static std::vector<RenderableMesh *> _meshes;
+static std::vector<Terrain *> _terrains;
 static Skybox *_skybox;
 
 static Mesh *_cube;
@@ -292,6 +294,10 @@ namespace
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
+#include <shaders/terrain.frag.h>
+#include <shaders/terrain.tcs.h>
+#include <shaders/terrain.tes.h>
+#include <shaders/terrain.vert.h>
 #include <shaders/visualize.frag.h>
 }
 
@@ -313,6 +319,9 @@ static void loadShaders()
 
     Shader *skybox = getShader(SHADER_SKYBOX);
     skybox->load("skybox", skybox_vert_source, skybox_frag_source);
+
+    Shader *terrain = getShader(SHADER_TERRAIN);
+    terrain->loadTess("terrain", terrain_vert_source, terrain_frag_source, terrain_tcs_source, terrain_tes_source);
 
     Shader *visualize = getShader(SHADER_VISUALIZE);
     visualize->load("visualize", screen_vert_source, visualize_frag_source);
@@ -442,6 +451,10 @@ void quitAll()
 {
     /* Destroy in reverse order */
 
+    for (Terrain *terrain : _terrains)
+        terrain->release();
+    _terrains.clear();
+
     for (RenderableMesh *mesh : _meshes)
         mesh->release();
     _meshes.clear();
@@ -554,11 +567,13 @@ void renderAll()
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    /* Render meshes */
 
     Shader *genericShader = getShader(SHADER_GENERIC);
     genericShader->use();
 
-    /* Render meshes */
     glDepthFunc(GL_LESS);
     for (RenderableMesh *mesh : _meshes)
     {
@@ -569,10 +584,28 @@ void renderAll()
         }
     }
 
+    /* Render terrains */
+
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    Shader *terrainShader = getShader(SHADER_TERRAIN);
+    terrainShader->use();
+
+    for (Terrain *terrain : _terrains)
+    {
+        if (terrain->enabled())
+        {
+            terrain->render(terrainShader);
+        }
+    }
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    /* Render skybox */
+
     Shader *skyboxShader = getShader(SHADER_SKYBOX);
     skyboxShader->use();
 
-    /* Render skybox */
     glDepthFunc(GL_LEQUAL);
     _skybox->render(skyboxShader);
 
@@ -650,6 +683,20 @@ void addMesh(RenderableMesh *mesh)
     {
         mesh->retain();
         _meshes.push_back(mesh);
+    }
+}
+
+const std::vector<Terrain *> &getTerrains()
+{
+    return _terrains;
+}
+
+void addTerrain(Terrain *terrain)
+{
+    if (terrain)
+    {
+        terrain->retain();
+        _terrains.push_back(terrain);
     }
 }
 

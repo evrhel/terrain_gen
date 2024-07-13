@@ -81,6 +81,113 @@ void Shader::load(const char *name, const char *vertexSource, const char *fragme
     bindUniformBlock("Atmosphere", ATMOSPHERE_UNIFORM_BINDING);
 }
 
+void Shader::loadTess(const char *name, const char *vertexSource, const char *fragmentSource, const char *tessControlSource, const char *tessEvalSource)
+{
+    GLuint vert, frag, tcs, tes;
+    int success;
+    char infoLog[512];
+    bool hasError = false;
+
+    printf("Shader::loadTess: Loading %s\n", name);
+
+    /* Compile vertex shader */
+
+    vert = glCreateShader(GL_VERTEX_SHADER);
+
+    glShaderSource(vert, 1, &vertexSource, NULL);
+    glCompileShader(vert);
+
+    glGetShaderiv(vert, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vert, 512, NULL, infoLog);
+        printf("Vertex shader compilation failed: %s\n", infoLog);
+        hasError = true;
+        glDeleteShader(vert);
+    }
+
+    /* Compile fragment shader */
+
+    frag = glCreateShader(GL_FRAGMENT_SHADER);
+
+    glShaderSource(frag, 1, &fragmentSource, NULL);
+    glCompileShader(frag);
+
+    glGetShaderiv(frag, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(frag, 512, NULL, infoLog);
+        printf("Fragment shader compilation failed: %s\n", infoLog);
+        hasError = true;
+        glDeleteShader(frag);
+    }
+
+    /* Compile tessellation control shader */
+
+    tcs = glCreateShader(GL_TESS_CONTROL_SHADER);
+
+    glShaderSource(tcs, 1, &tessControlSource, NULL);
+    glCompileShader(tcs);
+
+    glGetShaderiv(tcs, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(tcs, 512, NULL, infoLog);
+        printf("Tessellation control shader compilation failed: %s\n", infoLog);
+        hasError = true;
+        glDeleteShader(tcs);
+    }
+
+    /* Compile tessellation evaluation shader */
+
+    tes = glCreateShader(GL_TESS_EVALUATION_SHADER);
+
+    glShaderSource(tes, 1, &tessEvalSource, NULL);
+    glCompileShader(tes);
+
+    glGetShaderiv(tes, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(tes, 512, NULL, infoLog);
+        printf("Tessellation evaluation shader compilation failed: %s\n", infoLog);
+        hasError = true;
+        glDeleteShader(tes);
+    }
+
+    if (hasError)
+        exit(1);
+
+    /* Link shaders */
+
+    _program = glCreateProgram();
+
+    glAttachShader(_program, vert);
+    glAttachShader(_program, frag);
+    glAttachShader(_program, tcs);
+    glAttachShader(_program, tes);
+
+    glLinkProgram(_program);
+
+    glGetProgramiv(_program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(_program, 512, NULL, infoLog);
+        printf("Shader program linking failed: %s\n", infoLog);
+        exit(1);
+    }
+
+    glDeleteShader(tes);
+    glDeleteShader(tcs);
+    glDeleteShader(frag);
+    glDeleteShader(vert);
+
+    _name = name;
+
+    /* Bind standard buffers */
+    bindUniformBlock("Camera", CAMERA_UNIFORM_BINDING);
+    bindUniformBlock("Atmosphere", ATMOSPHERE_UNIFORM_BINDING);
+}
+
 void Shader::setBool(const char *name, bool value)
 {
     int loc = glGetUniformLocation(_program, name);

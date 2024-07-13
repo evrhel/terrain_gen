@@ -16,6 +16,7 @@ class Skybox;
 class Camera;
 class Compositor;
 class Gbuffer;
+class Terrain;
 
 enum ShaderID
 {
@@ -24,6 +25,7 @@ enum ShaderID
 
     SHADER_GENERIC,
     SHADER_SKYBOX,
+    SHADER_TERRAIN,
 
     SHADER_VISUALIZE,
 
@@ -78,6 +80,9 @@ Camera *getCamera();
 
 const std::vector<RenderableMesh *> &getMeshes();
 void addMesh(RenderableMesh *mesh);
+
+const std::vector<Terrain *> &getTerrains();
+void addTerrain(Terrain *terrain);
 
 Skybox *getSkybox();
 

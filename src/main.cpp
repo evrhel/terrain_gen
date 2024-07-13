@@ -4,6 +4,7 @@
 #include "skybox.h"
 #include "mesh.h"
 #include "util.h"
+#include "terrain.h"
 
 #include <imgui.h>
 
@@ -24,6 +25,7 @@ static constexpr float kMetallic = 0.0f;
 static constexpr float kAo = 1.0f;
 
 static RenderableMesh *cube;
+static Terrain *terrain;
 
 static void debugWindow();
 
@@ -42,10 +44,16 @@ int main(int argc, char *argv[])
     material->metallicValue = kMetallic;
     material->aoValue = kAo;
 
+    terrain = new Terrain();
+    terrain->load("assets/iceland_heightmap.png", 20);
+    addTerrain(terrain);
+
+    Camera *camera = getCamera();
+    camera->setFar(2000.0f);
+
     while (beginFrame())
     {
         float dt = deltaTime();
-        Camera *camera = getCamera();
 
         float pitch = camera->pitch();
         if (getKey(SDL_SCANCODE_UP))
@@ -83,6 +91,7 @@ int main(int argc, char *argv[])
         endFrame();
     }
 
+    terrain->release();
     cube->release();
 
     quitAll();

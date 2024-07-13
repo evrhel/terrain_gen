@@ -16,6 +16,7 @@ public:
     void use() const;
 
     void load(const char *name, const char *vertexSource, const char *fragmentSource);
+    void loadTess(const char *name, const char *vertexSource, const char *fragmentSource, const char *tessControlSource, const char *tessEvalSource);
 
     void setBool(const char *name, bool value);
     void setFloat(const char *name, float value);
