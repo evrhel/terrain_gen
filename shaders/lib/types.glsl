@@ -4,6 +4,8 @@ struct Gbuffer
 {
     sampler2D albedo;
     sampler2D emissive;
+    sampler2D position;
+    sampler2D depth;
     sampler2D normal;
     sampler2D material; // roughness, metallic, ao
 };

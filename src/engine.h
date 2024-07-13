@@ -14,6 +14,8 @@ class RenderableMesh;
 class Shader;
 class Skybox;
 class Camera;
+class Compositor;
+class Gbuffer;
 
 enum ShaderID
 {
@@ -24,6 +26,14 @@ enum ShaderID
     SHADER_SKYBOX,
 
     SHADER_COUNT
+};
+
+enum CompositorID
+{
+    COMPOSITOR1,
+    COMPOSITOR2,
+
+    COMPOSITOR_COUNT
 };
 
 void initAll(int argc, char *argv[]);
@@ -48,6 +58,8 @@ void renderAll();
 void endFrame();
 
 Shader *getShader(ShaderID id);
+Gbuffer *getGbuffer();
+Compositor *getCompositor(CompositorID id);
 
 Camera *getCamera();
 

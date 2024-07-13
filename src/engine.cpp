@@ -12,6 +12,8 @@
 #include "skybox.h"
 #include "camera.h"
 #include "util.h"
+#include "composite.h"
+#include "gbuffer.h"
 
 static const Vector4 kQuadVertices[] = {
     Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
@@ -155,23 +157,23 @@ static const GLuint kCubeIndices[] = {
     /* Front */
     0, 1, 2,
     2, 3, 0,
-    
+
     /* Back */
     6, 5, 4,
     4, 7, 6,
-    
+
     /* Left */
     8, 9, 10,
     10, 11, 8,
-    
+
     /* Right */
     14, 13, 12,
     12, 15, 14,
-    
+
     /* Top */
     18, 17, 16,
     16, 19, 18,
-    
+
     /* Bottom */
     20, 21, 22,
     22, 23, 20};
@@ -196,6 +198,8 @@ static bool _mouseButtons[8];
 static IntVector2 _mousePosition;
 
 static Shader *_shaders[SHADER_COUNT];
+static Gbuffer *_gbuffer;
+static Compositor *_compositors[COMPOSITOR_COUNT];
 
 static Camera *_camera;
 
@@ -264,6 +268,8 @@ static void createQuad()
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    checkGLErrors("createQuad");
 }
 
 static void destroyQuad()
@@ -274,6 +280,8 @@ static void destroyQuad()
 }
 
 /* Sources */
+namespace
+{
 #include <shaders/composite1.frag.h>
 #include <shaders/composite2.frag.h>
 #include <shaders/generic.frag.h>
@@ -281,6 +289,7 @@ static void destroyQuad()
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
+}
 
 static void loadShaders()
 {
@@ -304,15 +313,47 @@ static void loadShaders()
 
 static void destroyShaders()
 {
-    for (int32_t i = 0; i < SHADER_COUNT; i++)
-    {
-        if (_shaders[i])
-            delete _shaders[i];
-    }
+    for (int i = 0; i < SHADER_COUNT; i++)
+        delete _shaders[i];
+}
+
+static void loadCompositors(GLsizei width, GLsizei height)
+{
+    OutputSpec outputs[MAX_COMPOSITOR_OUTPUTS];
+    OutputSpec &texture0 = outputs[0];
+    OutputSpec &texture1 = outputs[1];
+    OutputSpec &texture2 = outputs[2];
+    OutputSpec &texture3 = outputs[3];
+
+    /* Compositor 1 */
+    Compositor *compositor1 = new Compositor();
+    texture0.internalFormat = GL_R11F_G11F_B10F;
+    texture0.format = GL_RGB;
+    texture0.type = GL_FLOAT;
+    compositor1->load(outputs, 1);
+    _compositors[COMPOSITOR1] = compositor1;
+
+    /* Compositor 2 */
+    Compositor *compositor2 = new Compositor();
+    compositor2->load(nullptr, 0); // No outputs, go to screen
+    _compositors[COMPOSITOR2] = compositor2;
+
+    /* Initial resize */
+    for (int i = 0; i < COMPOSITOR_COUNT; i++)
+        _compositors[i]->resize(width, height);
+}
+
+static void destroyCompositors()
+{
+    for (int i = 0; i < COMPOSITOR_COUNT; i++)
+        delete _compositors[i];
 }
 
 void initAll(int argc, char *argv[])
 {
+    constexpr int kWindowWidth = 1280;
+    constexpr int kWindowHeight = 720;
+
     /* Initialize SDL */
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -325,7 +366,7 @@ void initAll(int argc, char *argv[])
     /* Create a window */
     _window = SDL_CreateWindow(
         "Terrain Generator",
-        1280, 720,
+        kWindowWidth, kWindowHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!_window)
         fatal("SDL_CreateWindow: %s\n", SDL_GetError());
@@ -364,6 +405,14 @@ void initAll(int argc, char *argv[])
     /* Load shaders */
     loadShaders();
 
+    /* Create G-buffer */
+    _gbuffer = new Gbuffer();
+    _gbuffer->load();
+    _gbuffer->resize(kWindowWidth, kWindowHeight);
+
+    /* Load compositors */
+    loadCompositors(kWindowWidth, kWindowHeight);
+
     /* Setup camera */
     _camera = new Camera();
     _camera->load();
@@ -388,6 +437,10 @@ void quitAll()
     delete _skybox;
 
     delete _camera;
+
+    destroyCompositors();
+
+    delete _gbuffer;
 
     destroyShaders();
 
@@ -472,15 +525,19 @@ bool beginFrame()
 
 void renderAll()
 {
+    /* Update */
+    _camera->update();
+    _skybox->update();
+
+    /* Render to Gbuffer */
+
+    _gbuffer->bind();
+
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-
-    /* Update */
-    _camera->update();
-    _skybox->update();
 
     Shader *genericShader = getShader(SHADER_GENERIC);
     genericShader->use();
@@ -502,6 +559,28 @@ void renderAll()
     /* Render skybox */
     glDepthFunc(GL_LEQUAL);
     _skybox->render(skyboxShader);
+
+    /* Composite render */
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glClearColor(0.0f, 1.0f, 0.0f, 1.0);
+
+    Compositor *lastCompositor = nullptr;
+    for (int i = 0; i < COMPOSITOR_COUNT; i++)
+    {
+        Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
+        s->use();
+
+        Compositor *c = _compositors[i];
+        c->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        c->render(s, _gbuffer, lastCompositor);
+
+        lastCompositor = c;
+    }
 }
 
 void endFrame()
@@ -514,6 +593,17 @@ Shader *getShader(ShaderID id)
     if (id < 0 || id >= SHADER_COUNT)
         return nullptr;
     return _shaders[id];
+}
+
+Gbuffer *getGbuffer()
+{
+    return _gbuffer;
+}
+
+Compositor *getCompositor(CompositorID id)
+{
+    if (id < 0 || id >= COMPOSITOR_COUNT)
+        return nullptr;
 }
 
 Camera *getCamera()

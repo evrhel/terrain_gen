@@ -4,9 +4,13 @@
 
 void main()
 {
-    /* Base color */
+    /* Sample gbuffer */
     vec3 albedo = texture(uGbuffer.albedo, fs_in.TexCoords).rgb;
     vec3 emissive = texture(uGbuffer.emissive, fs_in.TexCoords).rgb;
+    vec3 position = texture(uGbuffer.position, fs_in.TexCoords).rgb;
+    float depth = texture(uGbuffer.depth, fs_in.TexCoords).r;
+    vec3 normal = texture(uGbuffer.normal, fs_in.TexCoords).rgb;
+    vec3 material = texture(uGbuffer.material, fs_in.TexCoords).rgb;
 
     vec3 color = albedo + emissive;
 

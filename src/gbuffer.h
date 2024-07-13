@@ -1,9 +1,6 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <mutil/mutil.h>
-
-using namespace mutil;
 
 enum GbufferTexture
 {
@@ -16,6 +13,10 @@ enum GbufferTexture
 
     GBUFFER_NUM_TEXTURES
 };
+
+// Last GBUFFER_NUM_TEXTURES units are reserved for gbuffer textures
+#define GBUFFER_BASE_UNIT (32 - GBUFFER_NUM_TEXTURES)
+#define GBUFFER_TEXTURE_UNIT(texture) (GBUFFER_BASE_UNIT + (texture))
 
 class Gbuffer
 {
@@ -31,7 +32,11 @@ public:
         return _textures[texture];
     }
 
-    inline void bind() const { glBindFramebuffer(GL_FRAMEBUFFER, _fbo); }
+    inline void bind() const
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+        glViewport(0, 0, _width, _height);
+    }
 
     Gbuffer();
     ~Gbuffer();
@@ -39,6 +44,8 @@ public:
 private:
     GLuint _fbo, _rbo;
     GLuint _textures[6];
+
+    GLsizei _width, _height;
 
     void unload();
 };

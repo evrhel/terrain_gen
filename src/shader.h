@@ -8,6 +8,7 @@
 using namespace mutil;
 
 struct Material;
+class Gbuffer;
 
 class Shader
 {
@@ -27,6 +28,7 @@ public:
 
     void setTexture(const char *name, GLuint texture, int unit);
     void setMaterial(const Material &material);
+    void setGbuffer(const Gbuffer *gbuffer);
 
     void bindUniformBlock(const char *name, GLuint bindingPoint);
 

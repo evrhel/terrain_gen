@@ -1,9 +1,10 @@
 #include "gbuffer.h"
 
-#include "engine.h"
-
 #include <cstring>
 #include <cstdint>
+
+#include "engine.h"
+#include "util.h"
 
 void Gbuffer::load()
 {
@@ -22,6 +23,9 @@ static void setupGbufferTexture(GLuint texture, GLenum internalformat, GLsizei w
 void Gbuffer::resize(GLsizei width, GLsizei height)
 {
     unload();
+    
+    _width = width;
+    _height = height;
 
     glGenFramebuffers(1, &_fbo);
     glGenRenderbuffers(1, &_rbo);
@@ -56,9 +60,9 @@ void Gbuffer::resize(GLsizei width, GLsizei height)
     /* Depth */
     setupGbufferTexture(
         _textures[GBUFFER_DEPTH],
-        GL_DEPTH_COMPONENT24,
+        GL_R32F,
         width, height,
-        GL_DEPTH_COMPONENT,
+        GL_RED,
         GL_FLOAT);
 
     /* Normal */

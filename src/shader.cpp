@@ -4,6 +4,7 @@
 
 #include "material.h"
 #include "util.h"
+#include "gbuffer.h"
 
 void Shader::use() const
 {
@@ -178,6 +179,27 @@ void Shader::setMaterial(const Material &material)
     setTexture("uMaterial.ao.tex", material.ao.get(), 5);
     setBool("uMaterial.ao.hasTex", material.ao.get() != 0);
     setFloat("uMaterial.ao.value", material.aoValue);
+}
+
+void Shader::setGbuffer(const Gbuffer *gbuffer)
+{
+    GLuint albedo = gbuffer->getTexture(GBUFFER_ALBEDO);
+    setTexture("uGbuffer.albedo", albedo, GBUFFER_TEXTURE_UNIT(GBUFFER_ALBEDO));
+
+    GLuint emissive = gbuffer->getTexture(GBUFFER_EMISSIVE);
+    setTexture("uGbuffer.emissive", emissive, GBUFFER_TEXTURE_UNIT(GBUFFER_EMISSIVE));
+
+    GLuint position = gbuffer->getTexture(GBUFFER_POSITION);
+    setTexture("uGbuffer.position", position, GBUFFER_TEXTURE_UNIT(GBUFFER_POSITION));
+
+    GLuint depth = gbuffer->getTexture(GBUFFER_DEPTH);
+    setTexture("uGbuffer.depth", depth, GBUFFER_TEXTURE_UNIT(GBUFFER_DEPTH));
+
+    GLuint normal = gbuffer->getTexture(GBUFFER_NORMAL);
+    setTexture("uGbuffer.normal", normal, GBUFFER_TEXTURE_UNIT(GBUFFER_NORMAL));
+
+    GLuint material = gbuffer->getTexture(GBUFFER_MATERIAL);
+    setTexture("uGbuffer.material", material, GBUFFER_TEXTURE_UNIT(GBUFFER_MATERIAL));
 }
 
 void Shader::bindUniformBlock(const char *name, GLuint bindingPoint)

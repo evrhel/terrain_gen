@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(SOURCES
 	src/camera.cpp
+	src/composite.cpp
 	src/engine.cpp
 	src/gbuffer.cpp
     src/main.cpp
