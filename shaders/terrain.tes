@@ -2,7 +2,7 @@
 
 @include "lib/camera.glsl"
 
-layout (quads, fractional_odd_spacing, cw) in;
+layout (quads, fractional_even_spacing, cw) in;
 
 uniform sampler2D uHeightmap;
 uniform sampler2D uNormalmap;

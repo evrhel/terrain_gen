@@ -15,6 +15,120 @@ in TES_OUT
 uniform float uScale;
 uniform Material uMaterial;
 
+const vec3 kDirtAlbedo = vec3(0.436, 0.301, 0.252);
+const float kDirtRoughness = 0.9;
+const float kDirtMetallic = 0.0;
+
+const vec3 kGrassAlbedo = vec3(0.267, 0.755, 0.163);
+const float kGrassRoughness = 1.0;
+const float kGrassMetallic = 0.0;
+
+const vec3 kSnowAlbedo = vec3(0.89);
+const float kSnowRoughness = 0.25;
+const float kSnowMetallic = 0.0;
+
+const vec3 kRockAlbedo = vec3(0.29);
+const float kRockRoughness = 0.85;
+const float kRockMetallic = 0.0;
+
+const vec3 kWaterAlbedo = vec3(1.0, 1.0, 1.0);
+const float kWaterRoughness = 0.1;
+const float kWaterMetallic = 1.0;
+
+const vec3 kSandAlbedo = vec3(1.0, 0.841, 0.510);
+const float kSandRoughness = 0.6;
+const float kSandMetallic = 0.0;
+
+const float kRockStart = 0.45;
+const float kRockEnd = 0.5;
+
+const float kDirtStart = 0.05;
+const float kDirtEnd = 0.25;
+
+const float kSnowStart = 20.0;
+const float kSnowEnd = 40.0;
+
+const float kSandStart = 0.01;
+const float kSandEnd = 3.0;
+
+void computeBiome(out vec3 albedo, out float roughness, out float metallic)
+{
+    vec3 N = fs_in.Normal;
+    float h = fs_in.Height + 16;
+    float cosTheta = 1.0 - max(dot(N, vec3(0.0, 1.0, 0.0)), 0.0);
+    float factor;
+    
+    if (h < 0.01)
+    {
+        albedo = kWaterAlbedo;
+        roughness = kWaterRoughness;
+        metallic = kWaterMetallic;
+        return;
+    }
+
+    factor = clamp((h - kSandStart) / (kSandEnd - kSandStart), 0.0, 1.0);
+    albedo = mix(kSandAlbedo, kGrassAlbedo, factor);
+    roughness = mix(kSandRoughness, kGrassRoughness, factor);
+    metallic = mix(kSandMetallic, kGrassMetallic, factor);
+
+    factor = clamp((cosTheta - kDirtStart) / (kDirtEnd - kDirtStart), 0.0, 1.0);
+    albedo = mix(albedo, kDirtAlbedo, factor);
+    roughness = mix(roughness, kDirtRoughness, factor);
+    metallic = mix(metallic, kDirtMetallic, factor);
+
+    factor = clamp((h - kSnowStart) / (kSnowEnd - kSnowStart), 0.0, 1.0);
+    albedo = mix(albedo, kSnowAlbedo, factor);
+    roughness = mix(roughness, kSnowRoughness, factor);
+    metallic = mix(metallic, kSnowMetallic, factor);
+
+    factor = clamp((cosTheta - kRockStart) / (kRockEnd - kRockStart), 0.0, 1.0);
+    albedo = mix(albedo, kRockAlbedo, factor);
+    roughness = mix(roughness, kRockRoughness, factor);
+    metallic = mix(metallic, kRockMetallic, factor);
+    
+    /*if (cosTheta > kRockStart)
+    {
+        float factor = clamp(cosTheta - (kRockEnd - kRockStart), 0.0, 1.0);
+
+        albedo = mix(kDirtAlbedo, kRockAlbedo, factor);
+        roughness = mix(kDirtRoughness, kRockRoughness, factor);
+        metallic = mix(kDirtMetallic, kRockMetallic, factor);
+        return;
+    }
+
+    albedo = kDirtAlbedo;
+    roughness = kDirtRoughness;
+    metallic = kDirtMetallic;*/
+
+    /*if (cosTheta < 0.5)
+    {
+        albedo = kRockAlbedo;
+        roughness = kRockRoughness;
+        metallic = kRockMetallic;
+        return;
+    }
+
+    if (h > 50.0)
+    {
+        albedo = kSnowAlbedo;
+        roughness = kSnowRoughness;
+        metallic = kSnowMetallic;
+        return;
+    }
+
+    if (cosTheta < 0.75)
+    {
+        albedo = kDirtAlbedo;
+        roughness = kDirtRoughness;
+        metallic = kDirtMetallic;
+        return;
+    }
+
+    albedo = kGrassAlbedo;
+    roughness = kGrassRoughness;
+    metallic = kGrassMetallic;*/
+}
+
 void main()
 {
     if (uWireframe)
@@ -27,8 +141,22 @@ void main()
         MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
+
+    vec3 albedo;
+    float roughness;
+    float metallic;
+    computeBiome(albedo, roughness, metallic);
+
+    vec3 material = vec3(roughness, metallic, 1.0);
+
+    Albedo = vec4(albedo, 1.0);
+    Emissive = vec4(0.0, 0.0, 0.0, 1.0);
+    PositionOut = vec4(fs_in.FragPos, 1.0);
+    DepthOut = vec4(gl_FragCoord.zzz, 1.0);
+    NormalOut = vec4(fs_in.Normal, 1.0);
+    MaterialOut = vec4(material, 1.0);
     
-    vec4 albedo = sampleTexture(uMaterial.albedo, fs_in.TexCoords);
+    /*vec4 albedo = sampleTexture(uMaterial.albedo, fs_in.TexCoords);
     if (albedo.a < 0.5)
         discard;
 
@@ -47,5 +175,5 @@ void main()
     PositionOut = vec4(fs_in.FragPos, 1.0);
     DepthOut = vec4(gl_FragCoord.zzz, 1.0);
     NormalOut = vec4(fs_in.Normal, 1.0);
-    MaterialOut = vec4(material, 1.0);
+    MaterialOut = vec4(material, 1.0);*/
 }

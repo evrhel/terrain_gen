@@ -22,7 +22,7 @@ float distributionGGX(vec3 N, vec3 H, float roughness)
     float denom = NdotH2 * (a2 - 1.0) + 1.0;
     denom = kPI * denom * denom;
 
-    return num / max(denom, 0.00001);
+    return num / denom;
 }
 
 float geometrySchlickGGX(float NdotV, float roughness)
@@ -33,7 +33,7 @@ float geometrySchlickGGX(float NdotV, float roughness)
     float num = NdotV;
     float denom = NdotV * (1.0 - k) + k;
 
-    return num / max(denom, 0.00001);
+    return num / denom;
 }
 
 float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
@@ -109,7 +109,10 @@ void main()
     float kD = 1.0 - metallic;
     vec3 irradiance = sampleAtmosphere(normal);
     vec3 diffuse = irradiance * albedo;
-    vec3 ambient = kD * diffuse;// * ao;
+
+    vec3 reflection = sampleAtmosphere(reflect(normalize(uCamera.position - position), normal));
+
+    vec3 ambient = mix(reflection, diffuse, kD); //kD * diffuse;// * ao;
 
     /* Final color */
     vec3 color = lighting + ambient;
