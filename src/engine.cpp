@@ -235,6 +235,14 @@ static bool pollEvents()
         case SDL_EVENT_WINDOW_RESIZED:
             _windowSize.x = evt.window.data1;
             _windowSize.y = evt.window.data2;
+            
+            _gbuffer->resize(_windowSize.x, _windowSize.y);
+            _bloom->resize(_windowSize.x, _windowSize.y);
+
+            for (int i = 0; i < COMPOSITOR_COUNT; i++)
+				_compositors[i]->resize(_windowSize.x, _windowSize.y);
+            _visualizer->resize(_windowSize.x, _windowSize.y);
+
             break;
         case SDL_EVENT_KEY_DOWN:
             _keys[(int)evt.key.scancode] = true;

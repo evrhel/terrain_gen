@@ -42,11 +42,11 @@ const float kSandMetallic = 0.0;
 const float kRockStart = 0.45;
 const float kRockEnd = 0.5;
 
-const float kDirtStart = 10.0;
-const float kDirtEnd = 15.0;
+const float kDirtStart = 40.0;
+const float kDirtEnd = 45.0;
 
-const float kSnowStart = 20.0;
-const float kSnowEnd = 25.0;
+const float kSnowStart = 65.0;
+const float kSnowEnd = 70.0;
 
 const float kSandStart = 0.0;
 const float kSandEnd = 3.0;
@@ -54,7 +54,7 @@ const float kSandEnd = 3.0;
 void computeBiome(out vec3 albedo, out float roughness, out float metallic)
 {
     vec3 N = fs_in.Normal;
-    float h = fs_in.Height + 16;
+    float h = fs_in.FragPos.y;
     float cosTheta = 1.0 - max(dot(N, vec3(0.0, 1.0, 0.0)), 0.0);
     float factor;
 
@@ -73,10 +73,10 @@ void computeBiome(out vec3 albedo, out float roughness, out float metallic)
     roughness = mix(roughness, kSnowRoughness, factor);
     metallic = mix(metallic, kSnowMetallic, factor);
 
-    /*factor = clamp((cosTheta - kRockStart) / (kRockEnd - kRockStart), 0.0, 1.0);
+    factor = clamp((cosTheta - kRockStart) / (kRockEnd - kRockStart), 0.0, 1.0);
     albedo = mix(albedo, kRockAlbedo, factor);
     roughness = mix(roughness, kRockRoughness, factor);
-    metallic = mix(metallic, kRockMetallic, factor);*/
+    metallic = mix(metallic, kRockMetallic, factor);
 }
 
 void main()

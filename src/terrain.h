@@ -23,7 +23,7 @@ class Terrain
 public:
     void render(Shader *shader) const;
 
-    void load(const char *heightmap, uint32_t resolution, float scale);
+    void load(float width, float height, uint32_t resolution, float scale);
 
     void retain();
     void release();
@@ -39,9 +39,6 @@ public:
 private:
     GLuint _vao, _vbo;
     GLsizei _nVertices;
-
-    GLuint _heightmap;
-    GLuint _normalMap;
 
     float _scale;
 

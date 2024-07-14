@@ -9,8 +9,8 @@
 
 #include <imgui.h>
 
-static constexpr float kMoveSpeed = 10.0f;
-static constexpr float kShiftMultiplier = 5.0f;
+static constexpr float kMoveSpeed = 16.0f;
+static constexpr float kShiftMultiplier = 10.0f;
 static constexpr float kTurnSpeed = 90.0f;
 
 static constexpr float kSunAltitude = 25.0f;
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     material->aoValue = kAo;
 
     terrain = new Terrain();
-    terrain->load("assets/iceland_heightmap.png", 20, 64.0f);
+    terrain->load(2624, 1756, 20, 64.0f);
     addTerrain(terrain);
 
     Camera *camera = getCamera();

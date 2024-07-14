@@ -120,8 +120,9 @@ void main()
     float kD = 1.0 - metallic;
     vec3 irradiance = sampleAtmosphere(normal);
     vec3 diffuse = irradiance * albedo;
-
-    vec3 reflection = sampleAtmosphere(reflect(normalize(position - uCamera.position), normal));
+    
+    vec3 V = normalize(position - uCamera.position);
+    vec3 reflection = sampleAtmosphere(reflect(V, normal));
 
     vec3 ambient = mix(reflection, diffuse, kD); //kD * diffuse;// * ao;
 
