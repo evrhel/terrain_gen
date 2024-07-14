@@ -2,8 +2,8 @@
 
 @include "lib/composite.glsl"
 
-const float kGamma = 2.2;
-const float kExposure = 1.0;
+uniform float uGamma;
+uniform float uExposure;
 
 void main()
 {
@@ -15,10 +15,10 @@ void main()
     colorLinear += bloom;
 
     /* Tonemapping */
-    colorLinear = 1.0 - exp(-colorLinear * kExposure);
+    colorLinear = 1.0 - exp(-colorLinear * uExposure);
 
     /* Gamma correction */
-    vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0 / kGamma));
+    vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0 / uGamma));
 
     Color0 = vec4(colorGammaCorrected, 1.0);
 

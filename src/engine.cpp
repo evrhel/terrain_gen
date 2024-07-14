@@ -216,6 +216,9 @@ static Mesh *_cube;
 static VisualizeMode _visualizeMode = VISUALIZE_NONE;
 static bool _wireframe = false;
 
+static float _exposure = 1.0f;
+static float _gamma = 2.2f;
+
 static bool pollEvents()
 {
     SDL_Event evt;
@@ -667,6 +670,9 @@ void renderAll()
         // s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
         s->setTexture("uTexture1", _bloom->texture(), 1);
 
+        s->setFloat("uGamma", _gamma);
+        s->setFloat("uExposure", _exposure);
+
         c->render(s, _gbuffer, lastCompositor);
     }
     else
@@ -704,6 +710,11 @@ Compositor *getCompositor(CompositorID id)
 {
     if (id < 0 || id >= COMPOSITOR_COUNT)
         return nullptr;
+}
+
+Bloom *getBloom()
+{
+    return _bloom;
 }
 
 Camera *getCamera()
@@ -767,4 +778,24 @@ bool getWireframe()
 void setWireframe(bool enabled)
 {
     _wireframe = enabled;
+}
+
+float getExposure()
+{
+    return _exposure;
+}
+
+void setExposure(float exposure)
+{
+    _exposure = exposure;
+}
+
+float getGamma()
+{
+    return _gamma;
+}
+
+void setGamma(float gamma)
+{
+    _gamma = gamma;
 }

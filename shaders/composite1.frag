@@ -110,7 +110,7 @@ void main()
     vec3 irradiance = sampleAtmosphere(normal);
     vec3 diffuse = irradiance * albedo;
 
-    vec3 reflection = sampleAtmosphere(reflect(normalize(uCamera.position - position), normal));
+    vec3 reflection = sampleAtmosphere(reflect(normalize(position - uCamera.position), normal));
 
     vec3 ambient = mix(reflection, diffuse, kD); //kD * diffuse;// * ao;
 

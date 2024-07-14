@@ -33,7 +33,7 @@ void main()
     color += (b + d + f + h) * 0.0625;
     color += (j + k + l + m) * 0.0625;
 
-    Color0 = vec4(color, 1.0);
+    Color0 = vec4(max(color, 0.0001), 1.0);
 
     /* No other layers */
     Color1 = vec4(0.0);

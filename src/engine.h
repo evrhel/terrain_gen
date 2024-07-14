@@ -17,6 +17,7 @@ class Camera;
 class Compositor;
 class Gbuffer;
 class Terrain;
+class Bloom;
 
 enum ShaderID
 {
@@ -78,6 +79,7 @@ void endFrame();
 Shader *getShader(ShaderID id);
 Gbuffer *getGbuffer();
 Compositor *getCompositor(CompositorID id);
+Bloom *getBloom();
 
 Camera *getCamera();
 
@@ -96,3 +98,9 @@ void setVisualizeMode(VisualizeMode mode);
 
 bool getWireframe();
 void setWireframe(bool enabled);
+
+float getExposure();
+void setExposure(float exposure);
+
+float getGamma();
+void setGamma(float gamma);

@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "util.h"
 #include "terrain.h"
+#include "bloom.h"
 
 #include <imgui.h>
 
@@ -14,7 +15,7 @@ static constexpr float kTurnSpeed = 90.0f;
 
 static constexpr float kSunAltitude = 25.0f;
 static constexpr float kSunAzimuth = 15.0f;
-static constexpr Vector3 kSunColor = Vector3(1.0f);
+static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
 static constexpr float kSunIntensity = 1.0f;
 static constexpr float kSunTightness = 500.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
@@ -118,6 +119,9 @@ static void debugWindow()
     static float metallic = kMetallic;
     static float ao = kAo;
 
+    static float exposure = 1.0f;
+    static float gamma = 2.2f;
+
     Skybox *skybox = getSkybox();
     Material *cubeMaterial = cube->getMaterial();
     Material *terrainMaterial = terrain->getMaterial();
@@ -195,6 +199,17 @@ static void debugWindow()
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("Postprocess"))
+        {
+            ImGui::SeparatorText("Tonemapping");
+            ImGui::SliderFloat("Exposure", &exposure, 0.0f, 10.0f);
+
+            ImGui::SeparatorText("Display");
+            ImGui::SliderFloat("Gamma", &gamma, 0.1f, 10.0f);
+
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
 
@@ -220,4 +235,7 @@ static void debugWindow()
     terrainMaterial->roughnessValue = roughness;
     terrainMaterial->metallicValue = metallic;
     terrainMaterial->aoValue = ao;
+
+    setExposure(exposure);
+    setGamma(gamma);
 }
