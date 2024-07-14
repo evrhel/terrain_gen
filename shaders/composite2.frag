@@ -9,6 +9,14 @@ void main()
 {
     /* Linear color */
     vec3 colorLinear = texture(uTexture0, fs_in.TexCoords).rgb;
+    if (uWireframe)
+    {
+        Color0 = vec4(colorLinear, 1.0);
+        Color1 = vec4(0.0);
+        Color2 = vec4(0.0);
+        Color3 = vec4(0.0);
+        return;
+    }
 
     /* Bloom */
     vec3 bloom = texture(uTexture1, fs_in.TexCoords).rgb;

@@ -19,3 +19,6 @@ uniform sampler2D uTexture0;
 uniform sampler2D uTexture1;
 uniform sampler2D uTexture2;
 uniform sampler2D uTexture3;
+
+/* Whether wireframe mode is enabled */
+uniform bool uWireframe;

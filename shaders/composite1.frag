@@ -79,8 +79,19 @@ vec3 calcSun(vec3 fragPos, vec3 N, float metallic, float roughness, vec3 albedo)
 
 void main()
 {
-    /* Sample gbuffer */
+    /* Sample albedo */
     vec3 albedo = texture(uGbuffer.albedo, fs_in.TexCoords).rgb;
+
+    if (uWireframe)
+    {
+        Color0 = vec4(albedo, 1.0);
+        Color1 = vec4(0.0);
+        Color2 = vec4(0.0);
+        Color3 = vec4(0.0);
+        return;
+    }
+
+    /* Sample gbuffer */
     vec3 emissive = texture(uGbuffer.emissive, fs_in.TexCoords).rgb;
     vec3 normal = texture(uGbuffer.normal, fs_in.TexCoords).rgb;
 

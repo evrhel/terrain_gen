@@ -648,6 +648,8 @@ void renderAll()
             Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
             s->use();
 
+            s->setBool("uWireframe", _wireframe);
+
             Compositor *c = _compositors[i];
             c->bind();
 
@@ -663,6 +665,8 @@ void renderAll()
 
         Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + COMPOSITOR_COUNT - 1));
         s->use();
+
+        s->setBool("uWireframe", _wireframe);
 
         Compositor *c = _compositors[COMPOSITOR_COUNT - 1];
         c->bind();

@@ -19,6 +19,54 @@ out TES_OUT
     vec3 Normal;
 } tes_out;
 
+const float kPI = 3.14159;
+
+float rand(vec2 co)
+{
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float noise(vec2 p, float freq)
+{
+    float unit = 1.0 / freq;
+    vec2 ij = floor(p / unit);
+    vec2 xy = mod(p, unit) / unit;
+    xy = 0.5 * (1.0 - cos(kPI * xy));
+    float a = rand((ij + vec2(0.0, 0.0)));
+    float b = rand((ij + vec2(1.0, 0.0)));
+    float c = rand((ij + vec2(0.0, 1.0)));
+    float d = rand((ij + vec2(1.0, 1.0)));
+    float x1 = mix(a, b, xy.x);
+    float x2 = mix(c, d, xy.x);
+    return mix(x1, x2, xy.y);
+}
+
+float pNoise(vec2 p, int res)
+{
+    float persistance = 0.8;
+    float n = 0.0;
+    float normK = 0.0;
+    float f = 8.0;
+    float amp = 1.0;
+    int iCount = 0;
+
+    for (int i = 0; i < 50; i++)
+    {
+        n += amp * noise(p, f);
+        f *= 2;
+        normK += amp;
+        amp *= persistance;
+        if (iCount == res)
+            break;
+        iCount++;
+    }
+
+    float nf = n / normK;
+    return nf * nf * nf * nf;
+}
+
+const float kFrequency = 1.0 / 1024.0;
+
 void main()
 {
     float u = gl_TessCoord.x;
@@ -33,7 +81,7 @@ void main()
     vec2 t1 = (t11 - t10) * u + t10;
     vec2 texCoord = (t1 - t0) * v + t0;
 
-    tes_out.Height = texture(uHeightmap, texCoord).r * uScale - 16.0;
+   // tes_out.Height = texture(uHeightmap, texCoord).r * uScale - 16.0;
 
     vec4 p00 = gl_in[0].gl_Position;
     vec4 p01 = gl_in[1].gl_Position;
@@ -46,11 +94,25 @@ void main()
 
     vec4 p0 = (p01 - p00) * u + p00;
     vec4 p1 = (p11 - p10) * u + p10;
-    vec4 p = (p1 - p0) * v + p0 + normal * tes_out.Height;
+
+    vec4 pos = (p1 - p0) * v + p0;
+
+    float ay = pNoise(pos.xz * kFrequency, 4) * uScale - 16.0;
+    float by = pNoise((pos.xz + vec2(0.1, 0)) * kFrequency, 4) * uScale - 16.0;
+    float cy = pNoise((pos.xz + vec2(0, 0.1)) * kFrequency, 4) * uScale - 16.0;
+
+    tes_out.Height = ay;
+
+    vec3 a = vec3(pos.x, ay, pos.z);
+    vec3 b = vec3(pos.x + 0.1, by, pos.z);
+    vec3 c = vec3(pos.x, cy, pos.z + 0.1);
+    tes_out.Normal = -normalize(cross(b - a, c - a));
+
+    vec4 p = pos + normal * tes_out.Height;
 
     /* Surface normal */
-    tes_out.Normal = texture(uNormalmap, texCoord).xyz;
-    //tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
+    //tes_out.Normal = texture(uNormalmap, texCoord).xyz;
+    tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
 
     tes_out.FragPos = vec3(uModel * p);
 

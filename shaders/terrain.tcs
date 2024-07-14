@@ -19,7 +19,7 @@ void main()
         const int kMinTessLevel = 4;
         const int kMaxTessLevel = 64;
         const float kMinDistance = 20;
-        const float kMaxDistance = 1000;
+        const float kMaxDistance = 800;
 
         vec4 eyeSpacePos00 = uCamera.view * uModel * gl_in[0].gl_Position;
         vec4 eyeSpacePos01 = uCamera.view * uModel * gl_in[1].gl_Position;
