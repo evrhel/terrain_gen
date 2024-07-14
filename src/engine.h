@@ -29,6 +29,9 @@ enum ShaderID
 
     SHADER_VISUALIZE,
 
+    SHADER_DOWNSAMPLE,
+    SHADER_UPSAMPLE,
+
     SHADER_COUNT
 };
 

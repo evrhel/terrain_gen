@@ -15,6 +15,7 @@
 #include "composite.h"
 #include "gbuffer.h"
 #include "terrain.h"
+#include "bloom.h"
 
 static const Vector4 kQuadVertices[] = {
     Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
@@ -202,6 +203,7 @@ static Shader *_shaders[SHADER_COUNT];
 static Gbuffer *_gbuffer;
 static Compositor *_compositors[COMPOSITOR_COUNT];
 static Compositor *_visualizer;
+static Bloom *_bloom;
 
 static Camera *_camera;
 
@@ -290,6 +292,7 @@ namespace
 {
 #include <shaders/composite1.frag.h>
 #include <shaders/composite2.frag.h>
+#include <shaders/downsample.frag.h>
 #include <shaders/generic.frag.h>
 #include <shaders/generic.vert.h>
 #include <shaders/screen.vert.h>
@@ -299,6 +302,7 @@ namespace
 #include <shaders/terrain.tcs.h>
 #include <shaders/terrain.tes.h>
 #include <shaders/terrain.vert.h>
+#include <shaders/upsample.frag.h>
 #include <shaders/visualize.frag.h>
 }
 
@@ -326,6 +330,12 @@ static void loadShaders()
 
     Shader *visualize = getShader(SHADER_VISUALIZE);
     visualize->load("visualize", screen_vert_source, visualize_frag_source);
+
+    Shader *downsample = getShader(SHADER_DOWNSAMPLE);
+    downsample->load("downsample", screen_vert_source, downsample_frag_source);
+
+    Shader *upsample = getShader(SHADER_UPSAMPLE);
+    upsample->load("upsample", screen_vert_source, upsample_frag_source);
 }
 
 static void destroyShaders()
@@ -434,6 +444,11 @@ void initAll(int argc, char *argv[])
 
     /* Load compositors */
     loadCompositors(kWindowWidth, kWindowHeight);
+
+    /* Create bloom manager */
+    _bloom = new Bloom();
+    _bloom->load();
+    _bloom->resize(kWindowWidth, kWindowHeight);
 
     /* Setup camera */
     _camera = new Camera();
@@ -625,7 +640,7 @@ void renderAll()
     if (_visualizeMode == VISUALIZE_NONE)
     {
         Compositor *lastCompositor = nullptr;
-        for (int i = 0; i < COMPOSITOR_COUNT; i++)
+        for (int i = 0; i < COMPOSITOR_COUNT - 1; i++)
         {
             Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
             s->use();
@@ -637,6 +652,22 @@ void renderAll()
 
             lastCompositor = c;
         }
+
+        /* Bloom */
+        _bloom->render(lastCompositor->getTexture(0));
+
+        /* Final composite render */
+
+        Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + COMPOSITOR_COUNT - 1));
+        s->use();
+
+        Compositor *c = _compositors[COMPOSITOR_COUNT - 1];
+        c->bind();
+
+        // s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
+        s->setTexture("uTexture1", _bloom->texture(), 1);
+
+        c->render(s, _gbuffer, lastCompositor);
     }
     else
     {
