@@ -65,6 +65,8 @@ void Texture2D::load(const void *image, size_t size)
 
 void Texture2D::load(const char *filename)
 {
+    printf("Texture2D::load: %s\n", filename);
+
     FILE *f = fopen(filename, "rb");
     if (!f)
     {

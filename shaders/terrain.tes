@@ -15,53 +15,8 @@ out TES_OUT
     vec3 FragPos;
     vec2 TexCoords;
     vec3 Normal;
+    mat3 TBN;
 } tes_out;
-
-const float kPI = 3.14159;
-
-// float rand(vec2 co)
-// {
-//     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-// }
-
-// float noise(vec2 p, float freq)
-// {
-//     float unit = 1.0 / freq;
-//     vec2 ij = floor(p / unit);
-//     vec2 xy = mod(p, unit) / unit;
-//     xy = 0.5 * (1.0 - cos(kPI * xy));
-//     float a = rand((ij + vec2(0.0, 0.0)));
-//     float b = rand((ij + vec2(1.0, 0.0)));
-//     float c = rand((ij + vec2(0.0, 1.0)));
-//     float d = rand((ij + vec2(1.0, 1.0)));
-//     float x1 = mix(a, b, xy.x);
-//     float x2 = mix(c, d, xy.x);
-//     return mix(x1, x2, xy.y);
-// }
-
-// float pNoise(vec2 p, int res)
-// {
-//     float persistance = 0.8;
-//     float n = 0.0;
-//     float normK = 0.0;
-//     float f = 4.0;
-//     float amp = 128.0;
-//     int iCount = 0;
-
-//     for (int i = 0; i < 50; i++)
-//     {
-//         n += amp * noise(p, f);
-//         f *= 2;
-//         normK += amp;
-//         amp *= persistance;
-//         if (iCount == res)
-//             break;
-//         iCount++;
-//     }
-
-//     float nf = n / normK;
-//     return nf * nf * nf * nf;
-// }
 
 vec4 mod289(vec4 x)
 {
@@ -171,12 +126,22 @@ void main()
     vec4 p = pos + normal * tes_out.Height;
 
     /* Surface normal */
-    //tes_out.Normal = texture(uNormalmap, texCoord).xyz;
     tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
+
+    vec3 dp1 = p01.xyz - p00.xyz;
+    vec3 dp2 = p10.xyz - p00.xyz;
+    vec2 duv1 = t01 - t00;
+    vec2 duv2 = t10 - t00;
+
+    float r = 1.0 / (duv1.x * duv2.y - duv1.y * duv2.x);
+    vec3 tangent = normalize((dp1 * duv2.y - dp2 * duv1.y) * r);
+    vec3 bitangent = normalize((dp2 * duv1.x - dp1 * duv2.x) * r);
+
+    tes_out.TBN = mat3(tangent, bitangent, tes_out.Normal);
 
     tes_out.FragPos = vec3(uModel * p);
 
-    tes_out.TexCoords = vec2(0.0);
+    tes_out.TexCoords = vec2(u, v) * 4.0;
 
     gl_Position = uCamera.projView * vec4(tes_out.FragPos, 1.0);
 }

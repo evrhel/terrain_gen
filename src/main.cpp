@@ -30,13 +30,14 @@ static RenderableMesh *cube;
 static Terrain *terrain;
 
 static void debugWindow();
+static void initTerrainMaterials();
 
 int main(int argc, char *argv[])
 {
     initAll(argc, argv);
 
     cube = new RenderableMesh(getCubeMesh());
-    addMesh(cube);
+    //addMesh(cube);
 
     cube->setScale(Vector3(10.0f, 1.0f, 10.0f));
 
@@ -49,6 +50,8 @@ int main(int argc, char *argv[])
     terrain = new Terrain();
     terrain->load(2624, 1756, 20, 64.0f);
     addTerrain(terrain);
+
+    initTerrainMaterials();
 
     Camera *camera = getCamera();
     camera->setFar(2000.0f);
@@ -124,7 +127,6 @@ static void debugWindow()
 
     Skybox *skybox = getSkybox();
     Material *cubeMaterial = cube->getMaterial();
-    Material *terrainMaterial = terrain->getMaterial();
 
     ImGui::Begin("Debug");
 
@@ -231,11 +233,22 @@ static void debugWindow()
     cubeMaterial->metallicValue = metallic;
     cubeMaterial->aoValue = ao;
 
-    terrainMaterial->albedoColor = albedoColor;
-    terrainMaterial->roughnessValue = roughness;
-    terrainMaterial->metallicValue = metallic;
-    terrainMaterial->aoValue = ao;
-
     setExposure(exposure);
     setGamma(gamma);
+}
+
+static void initTerrainMaterials()
+{
+    Material *materials = terrain->getMaterials();
+    Material &dirt = materials[TERRAIN_DIRT_INDEX];
+    Material &grass = materials[TERRAIN_GRASS_INDEX];
+    Material &snow = materials[TERRAIN_SNOW_INDEX];
+    Material &rock = materials[TERRAIN_ROCK_INDEX];
+    Material &sand = materials[TERRAIN_SAND_INDEX];
+
+    dirt.load("assets/rocky_dirt1");
+    grass.load("assets/forest-floor");
+    snow.load("assets/snowdrift1");
+    rock.load("assets/jagged-rocky-ground1");
+    sand.load("assets/wavy-sand");
 }

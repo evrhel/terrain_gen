@@ -31,9 +31,7 @@ vec4 sampleTexture(Texture tex, vec2 texCoords)
 {
     if (tex.hasTex)
     {
-        vec4 color = texture(tex.tex, texCoords);
-        color.rgb *= tex.color;
-        return color;
+        return texture(tex.tex, texCoords);
     }
 
     return vec4(tex.color, 1.0);

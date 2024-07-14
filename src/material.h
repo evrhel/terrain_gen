@@ -25,6 +25,8 @@ struct Material
     Texture2D ao;
     float aoValue;
 
+    void load(const char *name);
+
     Material &operator=(const Material &) = delete;
     Material &operator=(Material &&other) noexcept;
 

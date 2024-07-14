@@ -10,73 +10,128 @@ in TES_OUT
     vec3 FragPos;
     vec2 TexCoords;
     vec3 Normal;
+    mat3 TBN;
 } fs_in;
 
 uniform float uScale;
-uniform Material uMaterial;
+uniform Material uMaterials[5];
 
-const vec3 kDirtAlbedo = vec3(0.436, 0.301, 0.252);
-const float kDirtRoughness = 0.9;
-const float kDirtMetallic = 0.0;
+#define DIRT_INDEX 0
+#define GRASS_INDEX 1
+#define SNOW_INDEX 2
+#define ROCK_INDEX 3
+#define SAND_INDEX 4
 
-const vec3 kGrassAlbedo = vec3(0.267, 0.755, 0.163);
-const float kGrassRoughness = 1.0;
-const float kGrassMetallic = 0.0;
-
-const vec3 kSnowAlbedo = vec3(0.89);
-const float kSnowRoughness = 0.25;
-const float kSnowMetallic = 0.0;
-
-const vec3 kRockAlbedo = vec3(0.29);
-const float kRockRoughness = 0.85;
-const float kRockMetallic = 0.0;
-
-const vec3 kWaterAlbedo = vec3(1.0, 1.0, 1.0);
-const float kWaterRoughness = 0.1;
-const float kWaterMetallic = 1.0;
-
-const vec3 kSandAlbedo = vec3(1.0, 0.841, 0.510);
-const float kSandRoughness = 0.6;
-const float kSandMetallic = 0.0;
-
-const float kRockStart = 0.45;
-const float kRockEnd = 0.5;
+const float kRockStart = 0.3;
+const float kRockEnd = 0.4;
 
 const float kDirtStart = 40.0;
-const float kDirtEnd = 45.0;
+const float kDirtEnd = 55.0;
 
-const float kSnowStart = 65.0;
-const float kSnowEnd = 70.0;
+const float kSnowStart = 60.0;
+const float kSnowEnd = 75.0;
 
 const float kSandStart = 0.0;
 const float kSandEnd = 3.0;
 
-void computeBiome(out vec3 albedo, out float roughness, out float metallic)
+void computeWeights(out float dirt, out float grass, out float snow, out float rock, out float sand)
 {
     vec3 N = fs_in.Normal;
     float h = fs_in.FragPos.y;
-    float cosTheta = 1.0 - max(dot(N, vec3(0.0, 1.0, 0.0)), 0.0);
-    float factor;
+    float cosTheta = max(dot(N, vec3(0.0, 1.0, 0.0)), 0.0);
 
-    factor = clamp((h - kSandStart) / (kSandEnd - kSandStart), 0.0, 1.0);
-    albedo = mix(kSandAlbedo, kGrassAlbedo, factor);
-    roughness = mix(kSandRoughness, kGrassRoughness, factor);
-    metallic = mix(kSandMetallic, kGrassMetallic, factor);
+    if (h < kSandStart)
+    {
+        dirt = 0.0;
+        grass = 0.0;
+        snow = 0.0;
+        rock = 0.0;
+        sand = 1.0;
+        return;
+    }
 
-    factor = clamp((h - kDirtStart) / (kDirtEnd - kDirtStart), 0.0, 1.0);
-    albedo = mix(albedo, kDirtAlbedo, factor);
-    roughness = mix(roughness, kDirtRoughness, factor);
-    metallic = mix(metallic, kDirtMetallic, factor);
+    if (h < kSandEnd)
+    {
+        dirt = 0.0;
+        snow = 0.0;
+        rock = 0.0;
+        sand = 1.0 - (h - kSandStart) / (kSandEnd - kSandStart);
+        grass = 1.0 - sand;
+        return;
+    }
+    
+    if (h < kDirtStart)
+    {
+        dirt = 0.0;
+        grass = 1.0;
+        snow = 0.0;
+        rock = 0.0;
+        sand = 0.0;
+        return;
+    }
 
-    factor = clamp((h - kSnowStart) / (kSnowEnd - kSnowStart), 0.0, 1.0);
-    albedo = mix(albedo, kSnowAlbedo, factor);
-    roughness = mix(roughness, kSnowRoughness, factor);
-    metallic = mix(metallic, kSnowMetallic, factor);
+    if (h < kDirtEnd)
+    {
+        dirt = (h - kDirtStart) / (kDirtEnd - kDirtStart);
+        grass = 1.0 - dirt;
+        snow = 0.0;
+        rock = 0.0;
+        sand = 0.0;
+        return;
+    }
 
-    factor = clamp((cosTheta - kRockStart) / (kRockEnd - kRockStart), 0.0, 1.0);
-    albedo = mix(albedo, kRockAlbedo, factor);
-    roughness = mix(roughness, kRockRoughness, factor);
-    metallic = mix(metallic, kRockMetallic, factor);
+    snow = clamp((h - kSnowStart) / (kSnowEnd - kSnowStart), 0.0, 1.0);
+    dirt = 1.0 - snow;
+    grass = 0.0;
+    rock = 0.0;
+    sand = 0.0;
+}
+
+void sampleTerrain(out vec3 albedo, out vec3 normal, out float roughness, out float metallic, out float ao)
+{
+    float dirt, grass, snow, rock, sand;
+
+    computeWeights(dirt, grass, snow, rock, sand);
+
+    /* Albedo */
+    albedo = vec3(0.0);
+    albedo += dirt * sampleTexture(uMaterials[DIRT_INDEX].albedo, fs_in.TexCoords).rgb;
+    albedo += grass * sampleTexture(uMaterials[GRASS_INDEX].albedo, fs_in.TexCoords).rgb;
+    albedo += snow * sampleTexture(uMaterials[SNOW_INDEX].albedo, fs_in.TexCoords).rgb;
+    albedo += rock * sampleTexture(uMaterials[ROCK_INDEX].albedo, fs_in.TexCoords).rgb;
+    albedo += sand * sampleTexture(uMaterials[SAND_INDEX].albedo, fs_in.TexCoords).rgb;
+
+    /* Normal */
+    normal = vec3(0.0);
+    normal += dirt * sampleTexture(uMaterials[DIRT_INDEX].normal, fs_in.TexCoords).rgb;
+    normal += grass * sampleTexture(uMaterials[GRASS_INDEX].normal, fs_in.TexCoords).rgb;
+    normal += snow * sampleTexture(uMaterials[SNOW_INDEX].normal, fs_in.TexCoords).rgb;
+    normal += rock * sampleTexture(uMaterials[ROCK_INDEX].normal, fs_in.TexCoords).rgb;
+    normal += sand * sampleTexture(uMaterials[SAND_INDEX].normal, fs_in.TexCoords).rgb;
+
+    /* Roughness */
+    roughness = 0.0;
+    roughness += dirt * sampleTexture(uMaterials[DIRT_INDEX].roughness, fs_in.TexCoords).r;
+    roughness += grass * sampleTexture(uMaterials[GRASS_INDEX].roughness, fs_in.TexCoords).r;
+    roughness += snow * sampleTexture(uMaterials[SNOW_INDEX].roughness, fs_in.TexCoords).r;
+    roughness += rock * sampleTexture(uMaterials[ROCK_INDEX].roughness, fs_in.TexCoords).r;
+    roughness += sand * sampleTexture(uMaterials[SAND_INDEX].roughness, fs_in.TexCoords).r;
+
+    /* Metallic */
+    metallic = 0.0;
+    metallic += dirt * sampleTexture(uMaterials[DIRT_INDEX].metallic, fs_in.TexCoords).r;
+    metallic += grass * sampleTexture(uMaterials[GRASS_INDEX].metallic, fs_in.TexCoords).r;
+    metallic += snow * sampleTexture(uMaterials[SNOW_INDEX].metallic, fs_in.TexCoords).r;
+    metallic += rock * sampleTexture(uMaterials[ROCK_INDEX].metallic, fs_in.TexCoords).r;
+    metallic += sand * sampleTexture(uMaterials[SAND_INDEX].metallic, fs_in.TexCoords).r;
+
+    /* AO */
+    ao = 0.0;
+    ao += dirt * sampleTexture(uMaterials[DIRT_INDEX].ao, fs_in.TexCoords).r;
+    ao += grass * sampleTexture(uMaterials[GRASS_INDEX].ao, fs_in.TexCoords).r;
+    ao += snow * sampleTexture(uMaterials[SNOW_INDEX].ao, fs_in.TexCoords).r;
+    ao += rock * sampleTexture(uMaterials[ROCK_INDEX].ao, fs_in.TexCoords).r;
+    ao += sand * sampleTexture(uMaterials[SAND_INDEX].ao, fs_in.TexCoords).r;
 }
 
 void main()
@@ -93,17 +148,23 @@ void main()
     }
 
     vec3 albedo;
+    vec3 normal;
     float roughness;
     float metallic;
-    computeBiome(albedo, roughness, metallic);
+    float ao;
+    sampleTerrain(albedo, normal, roughness, metallic, ao);
 
-    vec3 material = vec3(roughness, metallic, 1.0);
+    vec3 material = vec3(roughness, metallic, ao);
+
+    /* Compute normal */
+    normal = normal * 2.0 - 1.0;
+    normal = normalize(fs_in.TBN * normal);
 
     Albedo = vec4(albedo, 1.0);
     Emissive = vec4(0.0, 0.0, 0.0, 1.0);
     PositionOut = vec4(fs_in.FragPos, 1.0);
     DepthOut = vec4(gl_FragCoord.zzz, 1.0);
-    NormalOut = vec4(fs_in.Normal, 1.0);
+    NormalOut = vec4(normal, 1.0);
     MaterialOut = vec4(material, 1.0);
     
     /*vec4 albedo = sampleTexture(uMaterial.albedo, fs_in.TexCoords);

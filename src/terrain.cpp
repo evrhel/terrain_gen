@@ -16,7 +16,8 @@ void Terrain::render(Shader *shader) const
     shader->setMatrix4("uModel", Matrix4(1.0f));
     shader->setFloat("uScale", _scale);
 
-    shader->setMaterial(_material);
+    for (int i = 0; i < NUM_TERRAIN_MATERIALS; i++)
+        shader->setMaterial(i, _materials[i]);
 
     glBindVertexArray(_vao);
     glDrawArrays(GL_PATCHES, 0, _nVertices);

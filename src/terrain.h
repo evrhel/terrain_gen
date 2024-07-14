@@ -8,6 +8,13 @@
 
 #include "material.h"
 
+#define NUM_TERRAIN_MATERIALS 5
+#define TERRAIN_DIRT_INDEX 0
+#define TERRAIN_GRASS_INDEX 1
+#define TERRAIN_SNOW_INDEX 2
+#define TERRAIN_ROCK_INDEX 3
+#define TERRAIN_SAND_INDEX 4
+
 using namespace mutil;
 
 class Shader;
@@ -31,7 +38,7 @@ public:
     constexpr bool enabled() const { return _enabled; }
     constexpr void setEnabled(bool enabled) { _enabled = enabled; }
 
-    constexpr Material *getMaterial() { return &_material; }
+    constexpr Material *getMaterials() { return _materials; }
 
     Terrain();
     ~Terrain();
@@ -46,5 +53,5 @@ private:
 
     bool _enabled;
 
-    Material _material;
+    Material _materials[NUM_TERRAIN_MATERIALS];
 };

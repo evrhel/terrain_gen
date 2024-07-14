@@ -1,6 +1,29 @@
 #include "material.h"
 
 #include <utility>
+#include <cstdio>
+
+void Material::load(const char *name)
+{
+    printf("Material::load: %s\n", name);
+
+    char path[256];
+
+    snprintf(path, sizeof(path), "%s/albedo.png", name);
+    albedo.load(path);
+
+    snprintf(path, sizeof(path), "%s/normal.png", name);
+    normal.load(path);
+
+    snprintf(path, sizeof(path), "%s/roughness.png", name);
+    roughness.load(path);
+
+    snprintf(path, sizeof(path), "%s/metallic.png", name);
+    metallic.load(path);
+
+    snprintf(path, sizeof(path), "%s/ao.png", name);
+    ao.load(path);
+}
 
 Material &Material::operator=(Material &&other) noexcept
 {

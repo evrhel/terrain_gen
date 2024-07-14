@@ -124,7 +124,7 @@ void main()
     vec3 V = normalize(position - uCamera.position);
     vec3 reflection = sampleAtmosphere(reflect(V, normal));
 
-    vec3 ambient = mix(reflection, diffuse, kD); //kD * diffuse;// * ao;
+    vec3 ambient = mix(reflection, diffuse, kD) * ao; //kD * diffuse;// * ao;
 
     /* Final color */
     vec3 color = lighting + ambient;

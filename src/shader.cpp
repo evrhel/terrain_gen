@@ -1,6 +1,7 @@
 #include "shader.h"
 
 #include <cstdio>
+#include <cstdarg>
 
 #include "material.h"
 #include "util.h"
@@ -244,6 +245,86 @@ void Shader::setMatrix4(const char *name, const Matrix4 &value)
         glUniformMatrix4fv(loc, 1, GL_FALSE, (float *)&value);
 }
 
+void Shader::setBoolf(const char *format, bool value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform1i(loc, value);
+}
+
+void Shader::setFloatf(const char *format, float value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform1f(loc, value);
+}
+
+void Shader::setIntf(const char *format, int value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform1i(loc, value);
+}
+
+void Shader::setVector2f(const char *format, Vector2 value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform2fv(loc, 1, (float *)&value);
+}
+
+void Shader::setVector3f(const char *format, Vector3 value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform3fv(loc, 1, (float *)&value);
+}
+
+void Shader::setVector4f(const char *format, Vector4 value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniform4fv(loc, 1, (float *)&value);
+}
+
+void Shader::setMatrix3f(const char *format, Matrix3 value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniformMatrix3fv(loc, 1, GL_FALSE, (float *)&value);
+}
+
+void Shader::setMatrix4f(const char *format, Matrix4 value, ...)
+{
+    va_list args;
+    va_start(args, value);
+    int loc = getUniformLocationv(format, args);
+    va_end(args);
+    if (loc != -1)
+        glUniformMatrix4fv(loc, 1, GL_FALSE, (float *)&value);
+}
+
 void Shader::setTexture(const char *name, GLuint texture, int unit)
 {
     int loc = glGetUniformLocation(_program, name);
@@ -288,6 +369,39 @@ void Shader::setMaterial(const Material &material)
     setVector3("uMaterial.ao.color", Vector3(material.aoValue));
 }
 
+void Shader::setMaterial(int index, const Material &material)
+{
+    /* Albedo */
+    setTexturef("uMaterials[%d].albedo.tex", material.albedo.get(), 0 + index * 6, index);
+    setBoolf("uMaterials[%d].albedo.hasTex", material.albedo.get() != 0, index);
+    setVector3f("uMaterials[%d].albedo.color", material.albedoColor, index);
+
+    /* Emissive */
+    setTexturef("uMaterials[%d].emissive.tex", material.emissive.get(), 1 + index * 6, index);
+    setBoolf("uMaterials[%d].emissive.hasTex", material.emissive.get() != 0, index);
+    setVector3f("uMaterials[%d].emissive.color", material.emissiveColor, index);
+
+    /* Normal */
+    setTexturef("uMaterials[%d].normal.tex", material.normal.get(), 2 + index * 6, index);
+    setBoolf("uMaterials[%d].normal.hasTex", material.normal.get() != 0, index);
+    setVector3f("uMaterials[%d].normal.color", material.normal.get() ? Vector3(1.0f) : kDefaultNormal, index);
+
+    /* Roughness */
+    setTexturef("uMaterials[%d].roughness.tex", material.roughness.get(), 3 + index * 6, index);
+    setBoolf("uMaterials[%d].roughness.hasTex", material.roughness.get() != 0, index);
+    setVector3f("uMaterials[%d].roughness.color", Vector3(material.roughnessValue), index);
+
+    /* Metallic */
+    setTexturef("uMaterials[%d].metallic.tex", material.metallic.get(), 4 + index * 6, index);
+    setBoolf("uMaterials[%d].metallic.hasTex", material.metallic.get() != 0, index);
+    setVector3f("uMaterials[%d].metallic.color", Vector3(material.metallicValue), index);
+
+    /* AO */
+    setTexturef("uMaterials[%d].ao.tex", material.ao.get(), 5 + index * 6, index);
+    setBoolf("uMaterials[%d].ao.hasTex", material.ao.get() != 0, index);
+    setVector3f("uMaterials[%d].ao.color", Vector3(material.aoValue), index);
+}
+
 void Shader::setGbuffer(const Gbuffer *gbuffer)
 {
     GLuint albedo = gbuffer->getTexture(GBUFFER_ALBEDO);
@@ -309,6 +423,22 @@ void Shader::setGbuffer(const Gbuffer *gbuffer)
     setTexture("uGbuffer.material", material, GBUFFER_TEXTURE_UNIT(GBUFFER_MATERIAL));
 }
 
+void Shader::setTexturef(const char *format, GLuint texture, int unit, ...)
+{
+    va_list args;
+    va_start(args, unit);
+
+    int loc = getUniformLocationv(format, args);
+    if (loc != -1)
+    {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(loc, unit);
+    }
+
+    va_end(args);
+}
+
 void Shader::bindUniformBlock(const char *name, GLuint bindingPoint)
 {
     GLuint index = glGetUniformBlockIndex(_program, name);
@@ -322,4 +452,20 @@ Shader::~Shader()
 {
     if (_program)
         glDeleteProgram(_program);
+}
+
+int Shader::getUniformLocationf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int rc = getUniformLocationv(format, args);
+    va_end(args);
+    return rc;
+}
+
+int Shader::getUniformLocationv(const char *format, va_list args)
+{
+    char buffer[256];
+    vsnprintf(buffer, 256, format, args);
+    return glGetUniformLocation(_program, buffer);
 }
