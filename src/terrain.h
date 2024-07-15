@@ -39,6 +39,10 @@ public:
     constexpr void setEnabled(bool enabled) { _enabled = enabled; }
 
     constexpr Material *getMaterials() { return _materials; }
+    constexpr Material *getMaterial() { return _materials; }
+
+    constexpr bool usesMaterials() const { return _useMaterials; }
+    constexpr void setUseMaterials(bool use) { _useMaterials = use; }
 
     Terrain();
     ~Terrain();
@@ -54,4 +58,5 @@ private:
     bool _enabled;
 
     Material _materials[NUM_TERRAIN_MATERIALS];
+    bool _useMaterials;
 };

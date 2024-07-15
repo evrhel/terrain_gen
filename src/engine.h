@@ -27,6 +27,7 @@ enum ShaderID
     SHADER_GENERIC,
     SHADER_SKYBOX,
     SHADER_TERRAIN,
+    SHADER_WATER,
 
     SHADER_VISUALIZE,
 
@@ -88,6 +89,8 @@ void addMesh(RenderableMesh *mesh);
 
 const std::vector<Terrain *> &getTerrains();
 void addTerrain(Terrain *terrain);
+
+Terrain *getWater();
 
 Skybox *getSkybox();
 

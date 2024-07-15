@@ -31,6 +31,7 @@ static Terrain *terrain;
 
 static void debugWindow();
 static void initTerrainMaterials();
+static void initWater();
 
 int main(int argc, char *argv[])
 {
@@ -52,6 +53,8 @@ int main(int argc, char *argv[])
     addTerrain(terrain);
 
     initTerrainMaterials();
+
+    initWater();
 
     Camera *camera = getCamera();
     camera->setFar(2000.0f);
@@ -251,4 +254,15 @@ static void initTerrainMaterials()
     snow.load("assets/snowdrift1");
     rock.load("assets/jagged-rocky-ground1");
     sand.load("assets/wavy-sand");
+}
+
+static void initWater()
+{
+    Terrain *water = getWater();
+    water->load(2624, 1756, 5, 1.0f);
+
+    Material *material = water->getMaterial();
+    material->normal.load("assets/water.jpg");
+
+    water->setEnabled(true);
 }

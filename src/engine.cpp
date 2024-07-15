@@ -209,6 +209,7 @@ static Camera *_camera;
 
 static std::vector<RenderableMesh *> _meshes;
 static std::vector<Terrain *> _terrains;
+static Terrain *_water;
 static Skybox *_skybox;
 
 static Mesh *_cube;
@@ -315,6 +316,8 @@ namespace
 #include <shaders/terrain.vert.h>
 #include <shaders/upsample.frag.h>
 #include <shaders/visualize.frag.h>
+#include <shaders/water.frag.h>
+#include <shaders/water.tes.h>
 }
 
 static void loadShaders()
@@ -347,6 +350,9 @@ static void loadShaders()
 
     Shader *upsample = getShader(SHADER_UPSAMPLE);
     upsample->load("upsample", screen_vert_source, upsample_frag_source);
+
+    Shader *water = getShader(SHADER_WATER);
+	water->loadTess("water", terrain_vert_source, water_frag_source, terrain_tcs_source, water_tes_source);
 }
 
 static void destroyShaders()
@@ -468,6 +474,11 @@ void initAll(int argc, char *argv[])
     /* Create skybox */
     _skybox = new Skybox();
     _skybox->load();
+
+    /* Create water */
+    _water = new Terrain();
+    _water->setUseMaterials(false);
+    _water->setEnabled(false);
 
     /* Initialize time */
     _startTime = ls_time64();
@@ -632,6 +643,21 @@ void renderAll()
         }
     }
 
+    /* Water */
+    if (_water->enabled())
+    {
+        glDisable(GL_CULL_FACE); // Water is double-sided
+
+        Shader *waterShader = getShader(SHADER_WATER);
+        waterShader->use();
+
+        waterShader->setBool("uWireframe", _wireframe);
+
+        _water->render(waterShader);
+
+        glEnable(GL_CULL_FACE);
+    }
+
     if (_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -760,6 +786,11 @@ void addTerrain(Terrain *terrain)
         terrain->retain();
         _terrains.push_back(terrain);
     }
+}
+
+Terrain *getWater()
+{
+    return _water;
 }
 
 Skybox *getSkybox()

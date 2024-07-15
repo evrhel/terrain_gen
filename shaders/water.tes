@@ -1,0 +1,94 @@
+#version 410 core
+
+@include "lib/camera.glsl"
+
+layout (quads, fractional_odd_spacing, cw) in;
+
+uniform float uScale;
+uniform mat4 uModel;
+uniform float uTime;
+
+in vec2 TexCoords[];
+
+out TES_OUT
+{
+    float Height;
+    vec3 FragPos;
+    vec2 TexCoords;
+    vec3 Normal;
+    mat3 TBN;
+} tes_out;
+
+const float kFrequency = 1.0 / 16.0;
+
+float sampleWater(vec2 texCoord)
+{
+    /* Sinusoidal wave */
+    texCoord += uTime * 32;
+    float a = sin(texCoord.x * kFrequency) * cos(texCoord.y * kFrequency) * 0.5;
+    float b = sin(texCoord.x * kFrequency * 0.5) * cos(texCoord.y * kFrequency * 0.5) * 0.75;
+    float c = sin(texCoord.x * kFrequency * 0.25) * cos(texCoord.y * kFrequency * 0.25) * 1.0;
+    return (a + b + c) * uScale;
+}
+
+void main()
+{
+    float u = gl_TessCoord.x;
+    float v = gl_TessCoord.y;
+
+    vec2 t00 = TexCoords[0];
+    vec2 t01 = TexCoords[1];
+    vec2 t10 = TexCoords[2];
+    vec2 t11 = TexCoords[3];
+
+    vec2 t0 = (t01 - t00) * u + t00;
+    vec2 t1 = (t11 - t10) * u + t10;
+    vec2 texCoord = (t1 - t0) * v + t0;
+
+    vec4 p00 = gl_in[0].gl_Position;
+    vec4 p01 = gl_in[1].gl_Position;
+    vec4 p10 = gl_in[2].gl_Position;
+    vec4 p11 = gl_in[3].gl_Position;
+
+    vec4 uVec = p01 - p00;
+    vec4 vVec = p10 - p00;
+    vec4 normal = normalize(vec4(cross(vVec.xyz, uVec.xyz), 0)); // Not same as surface normal, used for displacement
+
+    vec4 p0 = (p01 - p00) * u + p00;
+    vec4 p1 = (p11 - p10) * u + p10;
+
+    vec4 pos = (p1 - p0) * v + p0;
+
+    float ay = sampleWater(pos.xz);
+    float by = sampleWater(pos.xz + vec2(kFrequency, 0));
+    float cy = sampleWater(pos.xz + vec2(0, kFrequency));
+
+    tes_out.Height = ay;
+
+    vec3 a = vec3(pos.x, ay, pos.z);
+    vec3 b = vec3(pos.x + kFrequency, by, pos.z);
+    vec3 c = vec3(pos.x, cy, pos.z + kFrequency);
+    tes_out.Normal = -normalize(cross(b - a, c - a));
+
+    vec4 p = pos + normal * tes_out.Height;
+
+    /* Surface normal */
+    tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
+
+    vec3 dp1 = p01.xyz - p00.xyz;
+    vec3 dp2 = p10.xyz - p00.xyz;
+    vec2 duv1 = t01 - t00;
+    vec2 duv2 = t10 - t00;
+
+    float r = 1.0 / (duv1.x * duv2.y - duv1.y * duv2.x);
+    vec3 tangent = normalize((dp1 * duv2.y - dp2 * duv1.y) * r);
+    vec3 bitangent = normalize((dp2 * duv1.x - dp1 * duv2.x) * r);
+
+    tes_out.TBN = mat3(tangent, bitangent, tes_out.Normal);
+
+    tes_out.FragPos = vec3(uModel * p);
+
+    tes_out.TexCoords = vec2(u, v) * 4.0;
+
+    gl_Position = uCamera.projView * vec4(tes_out.FragPos, 1.0);
+}

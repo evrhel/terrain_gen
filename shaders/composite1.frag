@@ -65,7 +65,7 @@ vec3 calcSun(vec3 fragPos, vec3 N, float metallic, float roughness, vec3 albedo)
 
     vec3 num = NDF * G * F;
     float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular = num / max(denom, 0.00001);
+    vec3 specular = num / max(denom, 0.000001);
 
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
