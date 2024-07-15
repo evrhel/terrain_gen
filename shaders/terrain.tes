@@ -77,11 +77,11 @@ float pnoise(vec2 P)
   return 2.3 * n_xy;
 }
 
-const float kFrequency = 1.0 / 256.0;
+const float kFrequency = 1.0 / 512.0;
 
 float sampleTerrain(vec2 texCoord)
 {
-    return pnoise(texCoord * kFrequency) * uScale + 48;
+    return pnoise(texCoord * kFrequency) * uScale + 64;
 }
 
 void main()

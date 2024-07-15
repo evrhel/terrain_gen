@@ -26,6 +26,8 @@ static constexpr float kRoughness = 0.5f;
 static constexpr float kMetallic = 0.0f;
 static constexpr float kAo = 1.0f;
 
+static constexpr int kTerrainSize = 4096;
+
 static RenderableMesh *cube;
 static Terrain *terrain;
 
@@ -49,7 +51,7 @@ int main(int argc, char *argv[])
     material->aoValue = kAo;
 
     terrain = new Terrain();
-    terrain->load(2624, 1756, 20, 64.0f);
+    terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
     addTerrain(terrain);
 
     initTerrainMaterials();
@@ -57,7 +59,7 @@ int main(int argc, char *argv[])
     initWater();
 
     Camera *camera = getCamera();
-    camera->setFar(2000.0f);
+    camera->setFar(4000.0f);
 
     while (beginFrame())
     {
@@ -259,7 +261,7 @@ static void initTerrainMaterials()
 static void initWater()
 {
     Terrain *water = getWater();
-    water->load(2624, 1756, 5, 1.0f);
+    water->load(kTerrainSize, kTerrainSize, 5, 1.0f);
 
     Material *material = water->getMaterial();
     material->normal.load("assets/water.jpg");

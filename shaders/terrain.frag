@@ -25,14 +25,14 @@ uniform Material uMaterials[5];
 const float kRockStart = 0.3;
 const float kRockEnd = 0.4;
 
-const float kDirtStart = 40.0;
-const float kDirtEnd = 55.0;
+const float kDirtStart = 50.0;
+const float kDirtEnd = 90.0;
 
-const float kSnowStart = 60.0;
-const float kSnowEnd = 75.0;
+const float kSnowStart = 100.0;
+const float kSnowEnd = 125.0;
 
 const float kSandStart = 0.0;
-const float kSandEnd = 3.0;
+const float kSandEnd = 10.0;
 
 void computeWeights(out float dirt, out float grass, out float snow, out float rock, out float sand)
 {
