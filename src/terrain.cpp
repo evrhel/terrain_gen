@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <string>
 
 #include <stb_image.h>
 #include <half.hpp>
@@ -15,6 +16,12 @@ void Terrain::render(Shader *shader) const
 {
     shader->setMatrix4("uModel", Matrix4(1.0f));
     shader->setFloat("uScale", _scale);
+
+    if (_hasHeightMap)
+    {
+        shader->setTexture("uHeightmap", _heightMap, 30);
+        shader->setTexture("uNormalmap", _normalMap, 31);
+    }
 
     if (_useMaterials)
     {
@@ -33,6 +40,7 @@ void Terrain::render(Shader *shader) const
 void Terrain::load(float width, float height, uint32_t resolution, float scale)
 {
     _scale = scale;
+    _hasHeightMap = false;
 
     /* Generate vertices */
 
@@ -98,6 +106,88 @@ void Terrain::load(float width, float height, uint32_t resolution, float scale)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void Terrain::load(const char *folder, float width, float height, uint32_t resolution, float scale)
+{
+    std::string dir(folder);
+    std::string infoFile = dir + "/heightmap.txt";
+    std::string heightmapFile = dir + "/heightmap.raw";
+    std::string normalFile = dir + "/normal.raw";
+
+    /* Read heightmap dimensions */
+
+    FILE *file = fopen(infoFile.c_str(), "r");
+    if (!file)
+		fatal("Terrain::load: failed to open heightmap.txt");
+
+    int hmWidth, hmHeight;
+    int n = fscanf(file, "%d %d", &hmWidth, &hmHeight);
+    if (n != 2)
+        fatal("Terrain::load: failed to read heightmap dimensions");
+
+    fclose(file);
+
+    /* Setup main terrain */
+    load(width, height, resolution, scale);
+
+    /* Load heightmap */
+    file = fopen(heightmapFile.c_str(), "rb");
+    if (!file)
+		fatal("Terrain::load: failed to open heightmap.raw");
+
+    size_t size = hmWidth * hmHeight * sizeof(half_float::half);
+    half_float::half *data = (half_float::half *)malloc(size);
+    if (!data)
+		fatal("Terrain::load: failed to allocate heightmap data");
+
+    size_t nRead = fread(data, 1, size, file);
+    if (nRead != size)
+		fatal("Terrain::load: failed to read heightmap data");
+
+    fclose(file);
+
+    /* Create heightmap texture */
+    glGenTextures(1, &_heightMap);
+    glBindTexture(GL_TEXTURE_2D, _heightMap);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, hmWidth, hmHeight, 0, GL_RED, GL_HALF_FLOAT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    free(data);
+
+    /* Load normalmap */
+    file = fopen(normalFile.c_str(), "rb");
+    if (!file)
+        fatal("Terrain::load: failed to open normal.raw");
+
+    size = hmWidth * hmHeight * 3 * sizeof(half_float::half);
+    data = (half_float::half *)malloc(size);
+    if (!data)
+		fatal("Terrain::load: failed to allocate normalmap data");
+
+    nRead = fread(data, 1, size, file);
+    if (nRead != size)
+        fatal("Terrain::load: failed to read normalmap data");
+
+    fclose(file);
+
+    /* Create normalmap texture */
+    glGenTextures(1, &_normalMap);
+    glBindTexture(GL_TEXTURE_2D, _normalMap);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hmWidth, hmHeight, 0, GL_RGB, GL_HALF_FLOAT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    free(data);
+
+    _hasHeightMap = true;
+}
+
 void Terrain::retain()
 {
     _refs++;
@@ -112,12 +202,21 @@ void Terrain::release()
 Terrain::Terrain() : _vao(0), _vbo(0),
                      _nVertices(0),
                      _refs(1),
-                     _enabled(true)
+                     _enabled(true),
+                     _hasHeightMap(false),
+                     _heightMap(0), _normalMap(0),
+                     _useMaterials(true)
 {
 }
 
 Terrain::~Terrain()
 {
+    if (_normalMap)
+        glDeleteTextures(1, &_normalMap);
+
+    if (_heightMap)
+        glDeleteTextures(1, &_heightMap);
+
     if (_vbo)
         glDeleteBuffers(1, &_vbo);
 

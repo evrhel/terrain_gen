@@ -5,6 +5,7 @@
 @include "lib/camera.glsl"
 
 const float kPI = 3.14159265359;
+const float kFogDensity = 0.0003;
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
@@ -128,6 +129,11 @@ void main()
 
     /* Final color */
     vec3 color = lighting + ambient;
+
+    /* Fog */
+    float dist = length(position - uCamera.position);
+    float fog = 1.0 - exp(-dist * kFogDensity);
+    color = mix(color, sampleAtmosphere(V), fog);
 
     Color0 = vec4(color, 1.0);
 

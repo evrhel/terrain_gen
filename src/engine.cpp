@@ -307,6 +307,7 @@ namespace
 #include <shaders/downsample.frag.h>
 #include <shaders/generic.frag.h>
 #include <shaders/generic.vert.h>
+#include <shaders/perlin.frag.h>
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
@@ -344,6 +345,9 @@ static void loadShaders()
 
     Shader *visualize = getShader(SHADER_VISUALIZE);
     visualize->load("visualize", screen_vert_source, visualize_frag_source);
+
+    Shader *perlin = getShader(SHADER_PERLIN);
+    perlin->load("perlin", screen_vert_source, perlin_frag_source);
 
     Shader *downsample = getShader(SHADER_DOWNSAMPLE);
     downsample->load("downsample", screen_vert_source, downsample_frag_source);

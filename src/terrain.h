@@ -31,6 +31,7 @@ public:
     void render(Shader *shader) const;
 
     void load(float width, float height, uint32_t resolution, float scale);
+    void load(const char *folder, float width, float height, uint32_t resolution, float scale);
 
     void retain();
     void release();
@@ -56,6 +57,9 @@ private:
     size_t _refs;
 
     bool _enabled;
+
+    bool _hasHeightMap;
+    GLuint _heightMap, _normalMap;
 
     Material _materials[NUM_TERRAIN_MATERIALS];
     bool _useMaterials;

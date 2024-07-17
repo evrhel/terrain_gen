@@ -6,6 +6,7 @@
 #include "util.h"
 #include "terrain.h"
 #include "bloom.h"
+#include "shader.h"
 
 #include <imgui.h>
 
@@ -21,14 +22,8 @@ static constexpr float kSunTightness = 500.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
 static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
 
-static constexpr Vector3 kAlbedoColor = colorRGB(255, 127, 127);
-static constexpr float kRoughness = 0.5f;
-static constexpr float kMetallic = 0.0f;
-static constexpr float kAo = 1.0f;
-
 static constexpr int kTerrainSize = 4096;
 
-static RenderableMesh *cube;
 static Terrain *terrain;
 
 static void debugWindow();
@@ -39,19 +34,9 @@ int main(int argc, char *argv[])
 {
     initAll(argc, argv);
 
-    cube = new RenderableMesh(getCubeMesh());
-    //addMesh(cube);
-
-    cube->setScale(Vector3(10.0f, 1.0f, 10.0f));
-
-    Material *material = cube->getMaterial();
-    material->albedoColor = kAlbedoColor;
-    material->roughnessValue = kRoughness;
-    material->metallicValue = kMetallic;
-    material->aoValue = kAo;
-
     terrain = new Terrain();
-    terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
+    //terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
+    terrain->load("assets/terrain", kTerrainSize, kTerrainSize, 20, 1.0f);
     addTerrain(terrain);
 
     initTerrainMaterials();
@@ -96,6 +81,9 @@ int main(int argc, char *argv[])
             position -= moveSpeed * dt * kWorldUp;
         camera->setPosition(position);
 
+        Shader *perlinShader = getShader(SHADER_PERLIN);
+        perlinShader->use();
+
         debugWindow();
 
         renderAll();
@@ -103,7 +91,6 @@ int main(int argc, char *argv[])
     }
 
     terrain->release();
-    cube->release();
 
     quitAll();
     return 0;
@@ -122,16 +109,10 @@ static void debugWindow()
     static Vector3 horizonColor = kHorizonColor;
     static Vector3 zenithColor = kZenithColor;
 
-    static Vector3 albedoColor = kAlbedoColor;
-    static float roughness = kRoughness;
-    static float metallic = kMetallic;
-    static float ao = kAo;
-
     static float exposure = 1.0f;
     static float gamma = 2.2f;
 
     Skybox *skybox = getSkybox();
-    Material *cubeMaterial = cube->getMaterial();
 
     ImGui::Begin("Debug");
 
@@ -196,16 +177,6 @@ static void debugWindow()
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("Material"))
-        {
-            ImGui::ColorEdit3("Albedo", (float *)&albedoColor);
-            ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f);
-            ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f);
-            ImGui::SliderFloat("Ao", &ao, 0.0f, 1.0f);
-
-            ImGui::EndTabItem();
-        }
-
         if (ImGui::BeginTabItem("Postprocess"))
         {
             ImGui::SeparatorText("Tonemapping");
@@ -232,11 +203,6 @@ static void debugWindow()
     skybox->setSunTightness(sunTightness);
     skybox->setHorizonColor(horizonColor);
     skybox->setZenithColor(zenithColor);
-
-    cubeMaterial->albedoColor = albedoColor;
-    cubeMaterial->roughnessValue = roughness;
-    cubeMaterial->metallicValue = metallic;
-    cubeMaterial->aoValue = ao;
 
     setExposure(exposure);
     setGamma(gamma);
