@@ -304,6 +304,7 @@ namespace
 {
 #include <shaders/composite1.frag.h>
 #include <shaders/composite2.frag.h>
+#include <shaders/composite3.frag.h>
 #include <shaders/downsample.frag.h>
 #include <shaders/generic.frag.h>
 #include <shaders/generic.vert.h>
@@ -333,6 +334,9 @@ static void loadShaders()
 
     Shader *composite2 = getShader(SHADER_COMPOSITE2);
     composite2->load("composite2", screen_vert_source, composite2_frag_source);
+
+    Shader *composite3 = getShader(SHADER_COMPOSITE3);
+    composite3->load("composite3", screen_vert_source, composite3_frag_source);
 
     Shader *generic = getShader(SHADER_GENERIC);
     generic->load("generic", generic_vert_source, generic_frag_source);
@@ -383,8 +387,16 @@ static void loadCompositors(GLsizei width, GLsizei height)
 
     /* Compositor 2 */
     Compositor *compositor2 = new Compositor();
-    compositor2->load(nullptr, 0); // No outputs, go to screen
+    texture0.internalFormat = GL_R11F_G11F_B10F;
+    texture0.format = GL_RGB;
+    texture0.type = GL_FLOAT;
+    compositor2->load(outputs, 1);
     _compositors[COMPOSITOR2] = compositor2;
+
+    /* Compositor 3 */
+    Compositor *compositor3 = new Compositor();
+    compositor3->load(nullptr, 0); // No outputs, go to screen
+    _compositors[COMPOSITOR3] = compositor3;
 
     /* Visualizer */
     _visualizer = new Compositor();

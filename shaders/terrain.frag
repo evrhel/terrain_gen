@@ -3,6 +3,7 @@
 @include "lib/types.glsl"
 @include "lib/gbuffer.glsl"
 @include "lib/atmosphere.glsl"
+@include "lib/camera.glsl"
 
 in TES_OUT
 {
@@ -34,10 +35,10 @@ const float kSnowEnd = 224.0;
 const float kSandStart = 0.0;
 const float kSandEnd = 16.0;
 
-void computeWeights(out float dirt, out float grass, out float snow, out float rock, out float sand)
+void computeWeights(vec3 fragpos, out float dirt, out float grass, out float snow, out float rock, out float sand)
 {
     vec3 N = fs_in.Normal;
-    float h = fs_in.FragPos.y;
+    float h = fragpos.y;
     float cosTheta = max(dot(N, vec3(0.0, 1.0, 0.0)), 0.0);
 
     if (h < kSandStart)
@@ -87,11 +88,11 @@ void computeWeights(out float dirt, out float grass, out float snow, out float r
     sand = 0.0;
 }
 
-void sampleTerrain(out vec3 albedo, out vec3 normal, out float roughness, out float metallic, out float ao)
+void sampleTerrain(vec3 fragpos, out vec3 albedo, out vec3 normal, out float roughness, out float metallic, out float ao)
 {
     float dirt, grass, snow, rock, sand;
 
-    computeWeights(dirt, grass, snow, rock, sand);
+    computeWeights(fragpos, dirt, grass, snow, rock, sand);
 
     /* Albedo */
     albedo = vec3(0.0);
@@ -147,12 +148,15 @@ void main()
         return;
     }
 
+    vec3 fragpos = fs_in.FragPos;
+    fragpos = nvec3(uCamera.invView * nvec4(fragpos));
+
     vec3 albedo;
     vec3 normal;
     float roughness;
     float metallic;
     float ao;
-    sampleTerrain(albedo, normal, roughness, metallic, ao);
+    sampleTerrain(fragpos, albedo, normal, roughness, metallic, ao);
 
     vec3 material = vec3(roughness, metallic, ao);
 

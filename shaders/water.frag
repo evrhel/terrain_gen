@@ -20,6 +20,8 @@ uniform Material uMaterial;
 const vec3 kAlbedo = vec3(0.0, 0.0, 0.0);
 const vec3 kMaterial = vec3(0.1, 0.9, 1.0);
 
+const float kNormalStrength = 0.33;
+
 const float kThresholdMap[64] = float[](
 	0, 32, 8, 40, 2, 34, 10, 42,
 	48, 16, 56, 24, 50, 18, 58, 26,
@@ -48,13 +50,16 @@ void main()
     vec3 N = sampleTexture(uMaterial.normal, fs_in.TexCoords).rgb;
     N = N * 2.0 - 1.0;
     N = normalize(fs_in.TBN * N);
+    N = mix(fs_in.Normal, N, kNormalStrength);
 
     if (!gl_FrontFacing)
         N = -N;
 
     /* Transparency */
-    vec3 V = normalize(uCamera.position - fs_in.FragPos);
-    float alpha = 1.0 - pow(clamp(dot(N, V), 0.0, 1.0), 5.0); // Fresnel
+    vec3 V = normalize(fs_in.FragPos);
+    float NdotV = dot(N, V);
+    float fresnel = pow(clamp(1.0 + NdotV, 0.0, 1.0), 4.0);
+    fresnel = 1.0;// mix(0.09, 1.0, fresnel); // F0
 
     /* Dithering */
     ivec2 pos = ivec2(gl_FragCoord.xy);
@@ -62,7 +67,7 @@ void main()
     pos.y = pos.y % 8;
 
     float threshold = kThresholdMap[pos.y * 8 + pos.x] / 64.0;
-    if (alpha < threshold)
+    if (fresnel < threshold)
         discard;
 
     Albedo = vec4(0.0, 0.0, 0.0, 1.0);

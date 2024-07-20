@@ -48,13 +48,16 @@ void main()
 
     vec4 pos = (p1 - p0) * v + p0;
 
-    tes_out.Height = texture(uHeightmap, texCoord).r;
+    tes_out.Height = texture(uHeightmap, texCoord).r / 2.0;
     tes_out.Normal = texture(uNormalmap, texCoord).xyz;
 
     vec4 p = pos + normal * tes_out.Height;
 
+    mat4 modelView = uCamera.view * uModel;
+    mat3 normalMatrix = transpose(inverse(mat3(modelView)));
+
     /* Surface normal */
-    tes_out.Normal = normalize(transpose(inverse(mat3(uModel))) * tes_out.Normal);
+    tes_out.Normal = normalize(normalMatrix * tes_out.Normal);
 
     vec3 dp1 = p01.xyz - p00.xyz;
     vec3 dp2 = p10.xyz - p00.xyz;
@@ -65,11 +68,11 @@ void main()
     vec3 tangent = normalize((dp1 * duv2.y - dp2 * duv1.y) * r);
     vec3 bitangent = normalize((dp2 * duv1.x - dp1 * duv2.x) * r);
 
-    tes_out.TBN = mat3(tangent, bitangent, tes_out.Normal);
+    tes_out.TBN = mat3(normalize(normalMatrix * tangent), normalize(normalMatrix * bitangent), tes_out.Normal);
 
-    tes_out.FragPos = vec3(uModel * p);
+    tes_out.FragPos = vec3(modelView * p);
 
     tes_out.TexCoords = vec2(u, v) * 16.0;
 
-    gl_Position = uCamera.projView * vec4(tes_out.FragPos, 1.0);
+    gl_Position = uCamera.proj * vec4(tes_out.FragPos, 1.0);
 }

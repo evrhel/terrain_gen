@@ -6,6 +6,7 @@
 using namespace mutil;
 
 class Shader;
+class Camera;
 
 class Skybox final
 {

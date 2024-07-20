@@ -19,3 +19,13 @@ constexpr Vector3 kDefaultNormal = {0.5f, 1.0f, 0.5f};
 #define colorRGB(r, g, b) (Vector3((r) / 255.0f, (g) / 255.0f, (b) / 255.0f))
 
 void checkGLErrors(const char *where);
+
+constexpr Vector4 nvec4(const Vector3 &v)
+{
+	return Vector4(v, 1.0f);
+}
+
+constexpr Vector3 nvec3(const Vector4 &v)
+{
+	return Vector3(v) / v.w;
+}

@@ -94,9 +94,9 @@ void main()
 
     /* Sample gbuffer */
     vec3 emissive = texture(uGbuffer.emissive, fs_in.TexCoords).rgb;
-    vec3 normal = texture(uGbuffer.normal, fs_in.TexCoords).rgb;
+    vec3 N = texture(uGbuffer.normal, fs_in.TexCoords).rgb;
 
-    if (normal == vec3(0.0))
+    if (N == vec3(0.0))
     {
         /* No lighting */
         Color0 = vec4(albedo + emissive, 1.0);
@@ -105,25 +105,30 @@ void main()
         Color3 = vec4(0.0);
         return;
     }
+
+    /* Convert normal to world-space */
+    N = normalize(uCamera.invView * vec4(N, 0.0)).xyz;
     
     /* Sample gbuffer */
-    vec3 position = texture(uGbuffer.position, fs_in.TexCoords).rgb;
-    vec3 material = texture(uGbuffer.material, fs_in.TexCoords).rgb;
+    vec3 fragpos = texture(uGbuffer.position, fs_in.TexCoords).rgb;
+    fragpos = nvec3(uCamera.invView * nvec4(fragpos));
 
+    /* Sample material */
+    vec3 material = texture(uGbuffer.material, fs_in.TexCoords).rgb;
     float roughness = material.r;
     float metallic = material.g;
     float ao = material.b;
 
     /* Lighting */
-    vec3 lighting = calcSun(position, normal, metallic, roughness, albedo);
+    vec3 lighting = calcSun(fragpos, N, metallic, roughness, albedo);
 
     /* Ambient */
     float kD = 1.0 - metallic;
-    vec3 irradiance = sampleAtmosphere(normal);
+    vec3 irradiance = sampleAtmosphere(N);
     vec3 diffuse = irradiance * albedo;
     
-    vec3 V = normalize(position - uCamera.position);
-    vec3 reflection = sampleAtmosphere(reflect(V, normal));
+    vec3 V = normalize(fragpos - uCamera.position);
+    vec3 reflection = sampleAtmosphere(reflect(V, N));
 
     vec3 ambient = mix(reflection, diffuse, kD) * ao; //kD * diffuse;// * ao;
 
@@ -131,7 +136,7 @@ void main()
     vec3 color = lighting + ambient;
 
     /* Fog */
-    float dist = length(position - uCamera.position);
+    float dist = length(fragpos - uCamera.position);
     float fog = 1.0 - exp(-dist * kFogDensity);
     color = mix(color, sampleAtmosphere(V), fog);
 

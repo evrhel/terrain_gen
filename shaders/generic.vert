@@ -17,10 +17,11 @@ uniform mat4 uModel;
 
 void main()
 {
-    vec4 worldPos = uModel * vec4(aPos, 1.0);
+    mat4 modelView = uCamera.view * uModel;
+    vec4 viewPos = modelView * vec4(aPos, 1.0);
 
-    vs_out.FragPos = worldPos.xyz;
-    vs_out.Normal = normalize(transpose(inverse(mat3(uModel))) * aNormal);
+    vs_out.FragPos = viewPos.xyz;
+    vs_out.Normal = normalize(transpose(inverse(mat3(modelView))) * aNormal);
     vs_out.TexCoords = aTexCoords;
-    gl_Position = uCamera.projView * worldPos;
+    gl_Position = uCamera.proj * viewPos;
 }

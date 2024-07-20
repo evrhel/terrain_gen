@@ -2,6 +2,8 @@
 
 @include "lib/gbuffer.glsl"
 @include "lib/atmosphere.glsl"
+@include "lib/camera.glsl"
+@include "lib/types.glsl"
 
 in VS_OUT
 {
@@ -10,14 +12,13 @@ in VS_OUT
 
 void main()
 {
-    /* View direction */
-    vec3 direction = normalize(fs_in.FragPos);
+    vec3 V = normalize(vec3(uCamera.invView * vec4(normalize(fs_in.FragPos), 0.0)));
     
     /* Sky color */
-    vec3 color = sampleAtmosphere(direction);
+    vec3 color = sampleAtmosphere(V);
 
     /* Draw sun */
-    float intensity = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
+    float intensity = max(dot(V, -uAtmosphere.sunDirection), 0.0);
     intensity = pow(intensity, uAtmosphere.sunTightness);
     color += uAtmosphere.sunColor * intensity * uAtmosphere.sunIntensity;
 

@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
     terrain = new Terrain();
     //terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
-    terrain->load("assets/terrain", kTerrainSize, kTerrainSize, 20, 1.0f);
+    terrain->load("assets/terrain", kTerrainSize, kTerrainSize, 20, 4.0f);
     addTerrain(terrain);
 
     initTerrainMaterials();
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     initWater();
 
     Camera *camera = getCamera();
-    camera->setFar(4000.0f);
+    camera->setFar(2048.0f);
 
     while (beginFrame())
     {
@@ -227,7 +227,7 @@ static void initTerrainMaterials()
 static void initWater()
 {
     Terrain *water = getWater();
-    water->load(kTerrainSize, kTerrainSize, 5, 1.0f);
+    water->load(kTerrainSize, kTerrainSize, 10, 0.5f);
 
     Material *material = water->getMaterial();
     material->normal.load("assets/water.jpg");
