@@ -26,10 +26,10 @@ void main()
         vec4 eyeSpacePos10 = uCamera.view * uModel * gl_in[2].gl_Position;
         vec4 eyeSpacePos11 = uCamera.view * uModel * gl_in[3].gl_Position;
 
-        float distance00 = clamp((abs(eyeSpacePos00.z) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
-        float distance01 = clamp((abs(eyeSpacePos01.z) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
-        float distance10 = clamp((abs(eyeSpacePos10.z) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
-        float distance11 = clamp((abs(eyeSpacePos11.z) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
+        float distance00 = clamp((length(eyeSpacePos00) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
+        float distance01 = clamp((length(eyeSpacePos01) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
+        float distance10 = clamp((length(eyeSpacePos10) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
+        float distance11 = clamp((length(eyeSpacePos11) - kMinDistance) / (kMaxDistance - kMinDistance), 0, 1);
 
         float tessLevel0 = mix(kMaxTessLevel, kMinTessLevel, min(distance10, distance00));
         float tessLevel1 = mix(kMaxTessLevel, kMinTessLevel, min(distance00, distance01));

@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cmath>
 
 #include <stb_image.h>
 
@@ -22,7 +23,7 @@ void Texture2D::load(GLenum internalformat, GLsizei width, GLsizei height, GLenu
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture2D::load(const void *image, size_t size)
+void Texture2D::load(const void *image, size_t size, ColorSpace colorSpace)
 {
     int channels;
 
@@ -58,12 +59,19 @@ void Texture2D::load(const void *image, size_t size)
         break;
     }
 
+    /* Convert to linear color space */
+    if (colorSpace == COLOR_SPACE_SRGB)
+    {
+        for (int i = 0; i < _width * _height * channels; i++)
+			pixels[i] = (uint8_t)(powf(pixels[i] / 255.0f, 2.2f) * 255.0f);
+    }
+
     load(internalformat, _width, _height, format, GL_UNSIGNED_BYTE, pixels);
 
     stbi_image_free(pixels);
 }
 
-void Texture2D::load(const char *filename)
+void Texture2D::load(const char *filename, ColorSpace colorSpace)
 {
     printf("Texture2D::load: %s\n", filename);
 
@@ -89,7 +97,7 @@ void Texture2D::load(const char *filename)
         return;
     }
 
-    load(buf, size);
+    load(buf, size, colorSpace);
 
     delete[] buf;
 }

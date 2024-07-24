@@ -55,7 +55,8 @@ enum VisualizeMode
     VISUALIZE_POSITION,
     VISUALIZE_DEPTH,
     VISUALIZE_NORMAL,
-    VISUALIZE_MATERIAL
+    VISUALIZE_MATERIAL,
+    VISUALIZE_COMPOSITOR
 };
 
 void initAll(int argc, char *argv[]);
@@ -102,6 +103,7 @@ Mesh *getCubeMesh();
 
 VisualizeMode getVisualizeMode();
 void setVisualizeMode(VisualizeMode mode);
+void setVisualizeCompositor(CompositorID id);
 
 bool getWireframe();
 void setWireframe(bool enabled);
@@ -111,3 +113,9 @@ void setExposure(float exposure);
 
 float getGamma();
 void setGamma(float gamma);
+
+float getBloomStrength();
+void setBloomStrength(float strength);
+
+bool getVsync();
+void setVsync(bool enabled);

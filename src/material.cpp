@@ -10,19 +10,19 @@ void Material::load(const char *name)
     char path[256];
 
     snprintf(path, sizeof(path), "%s/albedo.png", name);
-    albedo.load(path);
+    albedo.load(path, COLOR_SPACE_SRGB);
 
     snprintf(path, sizeof(path), "%s/normal.png", name);
-    normal.load(path);
+    normal.load(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/roughness.png", name);
-    roughness.load(path);
+    roughness.load(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/metallic.png", name);
-    metallic.load(path);
+    metallic.load(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/ao.png", name);
-    ao.load(path);
+    ao.load(path, COLOR_SPACE_LINEAR);
 }
 
 Material &Material::operator=(Material &&other) noexcept

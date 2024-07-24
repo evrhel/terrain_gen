@@ -30,9 +30,6 @@ struct CameraGPU
 
     Matrix4 projView;
     Matrix4 invProjView;
-
-    Matrix4 normalMatrix;
-    Matrix4 invNormalMatrix;
 };
 
 void Camera::load()
@@ -67,12 +64,6 @@ void Camera::update()
 
     _projView = _proj * _view;
     _invProjView = inverse(_projView);
-
-    _normalMatrix = transpose(_invView);
-    _normalMatrix.columns[3] = Vector4(0.0f); // Remove translation
-
-    _invNormalMatrix = Matrix4(inverse(Matrix3(_normalMatrix)));
-    _invNormalMatrix.columns[3] = Vector4(0.0f); // Remove translation
 
     upload();
 
@@ -116,9 +107,6 @@ void Camera::upload() const
 
     cam->projView = _projView;
     cam->invProjView = _invProjView;
-
-    cam->normalMatrix = _normalMatrix;
-    cam->invNormalMatrix = _invNormalMatrix;
 
     glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraGPU), buf);

@@ -77,25 +77,25 @@ void Terrain::load(float width, float height, uint32_t resolution)
             TerrainVertex &v2 = vertices[offset + 2];
             TerrainVertex &v3 = vertices[offset + 3];
 
-            v0.position = Vector3{-width / 2.0f + width * i / fRes,
+            v1.position = Vector3{-width / 2.0f + width * i / fRes,
                                   0.0f,
                                   -height / 2.0f + height * j / fRes};
-            v0.texCoords = Vector2{i / fRes, j / fRes};
+            v1.texCoords = Vector2{i / fRes, j / fRes};
 
-            v1.position = Vector3{-width / 2.0f + width * (i + 1) / fRes,
+            v0.position = Vector3{-width / 2.0f + width * (i + 1) / fRes,
                                   0.0f,
                                   -height / 2.0f + height * j / fRes};
-            v1.texCoords = Vector2{(i + 1) / fRes, j / fRes};
+            v0.texCoords = Vector2{(i + 1) / fRes, j / fRes};
 
-            v2.position = Vector3{-width / 2.0f + width * i / fRes,
+            v3.position = Vector3{-width / 2.0f + width * i / fRes,
                                   0.0f,
                                   -height / 2.0f + height * (j + 1) / fRes};
-            v2.texCoords = Vector2{i / fRes, (j + 1) / fRes};
+            v3.texCoords = Vector2{i / fRes, (j + 1) / fRes};
 
-            v3.position = Vector3{-width / 2.0f + width * (i + 1) / fRes,
+            v2.position = Vector3{-width / 2.0f + width * (i + 1) / fRes,
                                   0.0f,
                                   -height / 2.0f + height * (j + 1) / fRes};
-            v3.texCoords = Vector2{(i + 1) / fRes, (j + 1) / fRes};
+            v2.texCoords = Vector2{(i + 1) / fRes, (j + 1) / fRes};
         }
     }
 

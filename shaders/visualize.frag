@@ -10,6 +10,7 @@ const int kVisualizePosition = 3;
 const int kVisualizeDepth = 4;
 const int kVisualizeNormal = 5;
 const int kVisualizeMaterial = 6;
+const int kVisualizeCompositor = 7;
 
 uniform int uMode;
 
@@ -49,6 +50,10 @@ void main()
         MaterialInfo material;
         decodeMaterial(texture(uGbuffer.material, fs_in.TexCoords), material);
         color = vec3(material.roughness, material.metallic, material.ao);
+    }
+    else if (uMode == kVisualizeCompositor)
+    {
+        color = texture(uTexture0, fs_in.TexCoords).rgb;
     }
     
     Color0 = vec4(color, 1.0);

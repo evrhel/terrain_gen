@@ -217,10 +217,14 @@ static Skybox *_skybox;
 static Mesh *_cube;
 
 static VisualizeMode _visualizeMode = VISUALIZE_NONE;
+static CompositorID _visualizeCompositor = COMPOSITOR1;
 static bool _wireframe = false;
 
 static float _exposure = 1.0f;
 static float _gamma = 2.2f;
+static float _bloomStrength = 1.0f;
+
+static bool _vsync = true;
 
 #define SIZE_EV 64
 
@@ -442,6 +446,8 @@ void initAll(int argc, char *argv[])
     if (!_window)
         fatal("SDL_CreateWindow: %s\n", SDL_GetError());
 
+    _windowSize = IntVector2{kWindowWidth, kWindowHeight};
+
     /* Create OpenGL context */
 
     _gl = SDL_GL_CreateContext(_window);
@@ -467,7 +473,8 @@ void initAll(int argc, char *argv[])
     _cube->load(kCubeVertices, CUBE_VERTEX_COUNT, kCubeIndices, CUBE_INDEX_COUNT);
 
     /* Enable vsync */
-    SDL_GL_SetSwapInterval(1);
+    _vsync = true;
+    SDL_GL_SetSwapInterval(_vsync ? 1 : 0);
 
     printf("OpenGL : %s\n", glGetString(GL_VERSION));
     printf("GLSL   : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -709,7 +716,7 @@ void renderAll()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    if (_visualizeMode == VISUALIZE_NONE)
+    if (_visualizeMode == VISUALIZE_NONE || _visualizeMode == VISUALIZE_COMPOSITOR)
     {
         Compositor *lastCompositor = nullptr;
         for (int i = 0; i < COMPOSITOR_COUNT - 1; i++)
@@ -730,23 +737,44 @@ void renderAll()
         /* Bloom */
         _bloom->render(lastCompositor->getTexture(0));
 
-        /* Final composite render */
+        if (_visualizeMode == VISUALIZE_NONE)
+        {
+            /* Final composite render */
 
-        Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + COMPOSITOR_COUNT - 1));
-        s->use();
+            Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + COMPOSITOR_COUNT - 1));
+            s->use();
 
-        s->setBool("uWireframe", _wireframe);
+            s->setBool("uWireframe", _wireframe);
 
-        Compositor *c = _compositors[COMPOSITOR_COUNT - 1];
-        c->bind();
+            Compositor *c = _compositors[COMPOSITOR_COUNT - 1];
+            c->bind();
 
-        // s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
-        s->setTexture("uTexture1", _bloom->texture(), 1);
+            // s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
+            s->setTexture("uTexture1", _bloom->texture(), 1);
 
-        s->setFloat("uGamma", _gamma);
-        s->setFloat("uExposure", _exposure);
+            s->setFloat("uGamma", _gamma);
+            s->setFloat("uExposure", _exposure);
+            s->setFloat("uBloomStrength", _bloomStrength);
 
-        c->render(s, _gbuffer, lastCompositor);
+            c->render(s, _gbuffer, lastCompositor);
+        }
+        else
+        {
+            Shader *visualizeShader = getShader(SHADER_VISUALIZE);
+            visualizeShader->use();
+            visualizeShader->setInt("uMode", _visualizeMode);
+
+            if (_visualizeCompositor >= 0 && _visualizeCompositor < COMPOSITOR_COUNT - 1) // Skip final composite
+            {
+                GLuint tex = _compositors[_visualizeCompositor]->getTexture(0);
+                visualizeShader->setTexture("uTexture0", tex, 0);
+            }
+            else
+				visualizeShader->setTexture("uTexture0", 0, 0);
+            
+			_visualizer->bind();
+			_visualizer->render(visualizeShader, _gbuffer, nullptr);
+        }
     }
     else
     {
@@ -848,6 +876,11 @@ void setVisualizeMode(VisualizeMode mode)
     _visualizeMode = mode;
 }
 
+void setVisualizeCompositor(CompositorID id)
+{
+    _visualizeCompositor = id;
+}
+
 bool getWireframe()
 {
     return _wireframe;
@@ -876,4 +909,28 @@ float getGamma()
 void setGamma(float gamma)
 {
     _gamma = gamma;
+}
+
+float getBloomStrength()
+{
+    return _bloomStrength;
+}
+
+void setBloomStrength(float strength)
+{
+    _bloomStrength = strength;
+}
+
+bool getVsync()
+{
+    return _vsync;
+}
+
+void setVsync(bool enabled)
+{
+    if (_vsync != enabled)
+    {
+        _vsync = enabled;
+        SDL_GL_SetSwapInterval(_vsync ? 1 : 0);
+    }
 }

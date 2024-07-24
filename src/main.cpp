@@ -17,8 +17,8 @@ static float moveSpeed = 16.0f;
 static constexpr float kShiftMultiplier = 10.0f;
 static constexpr float kTurnSpeed = 90.0f;
 
-static constexpr float kIntrinsicSensitivity = 2.0f;
-static float mouseSensitivity = 5.0f;
+static constexpr float kIntrinsicSensitivity = 1.0f / 20.0f;
+static float mouseSensitivity = 2.5f;
 static float fov = 45.0f;
 static float near = 0.1f;
 static float far = 2048.0f;
@@ -31,7 +31,7 @@ static constexpr float kSunTightness = 500.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
 static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
 
-static constexpr int kTerrainSize = 8192;
+static constexpr int kTerrainSize = 4096;
 
 static Terrain *terrain;
 
@@ -44,10 +44,9 @@ int main(int argc, char *argv[])
     initAll(argc, argv);
 
     terrain = new Terrain();
-    //terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
     terrain->load("assets/terrain", 20);
 
-    Vector3 terrainScale = Vector3(kTerrainSize, 1.0f, kTerrainSize) / Vector3(terrain->width(), 1.0f, terrain->height());
+    Vector3 terrainScale = Vector3(kTerrainSize / terrain->width(), 1.0f, kTerrainSize / terrain->height());
     terrain->setScale(terrainScale);
 
     addTerrain(terrain);
@@ -113,8 +112,8 @@ int main(int argc, char *argv[])
         if (mouseLocked)
         {
             const IntVector2 &mouseDelta = getMouseDelta();
-            pitch -= mouseSensitivity * mouseDelta.y * dt * kIntrinsicSensitivity;
-            yaw -= mouseSensitivity * mouseDelta.x * dt * kIntrinsicSensitivity;
+            pitch -= mouseSensitivity * mouseDelta.y * kIntrinsicSensitivity;
+            yaw -= mouseSensitivity * mouseDelta.x * kIntrinsicSensitivity;
         }
 
         if (getKey(SDL_SCANCODE_UP))
@@ -168,7 +167,10 @@ int main(int argc, char *argv[])
 
 static void debugWindow()
 {
+    static bool vsync = true;
+
     static int visualizeMode = VISUALIZE_NONE;
+    static int compositor = COMPOSITOR1;
     static bool wireframe = false;
 
     static float sunAltitude = kSunAltitude;
@@ -180,6 +182,7 @@ static void debugWindow()
     static Vector3 zenithColor = kZenithColor;
 
     static float exposure = 1.0f;
+    static float bloomStrength = 1.0f;
     static float gamma = 2.2f;
 
     Skybox *skybox = getSkybox();
@@ -190,9 +193,18 @@ static void debugWindow()
     {
         if (ImGui::BeginTabItem("General"))
         {
-            ImGui::SeparatorText("Performance");
+            ImGui::SeparatorText("Info");
 
-            ImGui::LabelText("Frame Time", "%.3f ms", deltaTime() * 1000.0f);
+            const IntVector2 &winSize = getWindowSize();
+            double dt = (double)deltaTime();
+
+            ImGui::LabelText("Resolution", "%dx%d", winSize.x, winSize.y);
+            ImGui::LabelText("Framerate", "%.2f f/s (%.2f ms)", 1 / dt, dt * 1000);
+            ImGui::LabelText("Device", (const char *)glGetString(GL_RENDERER));
+
+            ImGui::SeparatorText("Options");
+
+            ImGui::Checkbox("Vsync", &vsync);
 
             ImGui::EndTabItem();
         }
@@ -227,7 +239,8 @@ static void debugWindow()
         {
             ImGui::SeparatorText("Debug");
 
-            ImGui::SliderInt("Buffer", &visualizeMode, VISUALIZE_NONE, VISUALIZE_MATERIAL);
+            ImGui::SliderInt("Buffer", &visualizeMode, VISUALIZE_NONE, VISUALIZE_COMPOSITOR);
+            ImGui::SliderInt("Compositor", &compositor, COMPOSITOR1, COMPOSITOR_COUNT - 2);
 
             ImGui::Checkbox("Wireframe", &wireframe);
 
@@ -264,6 +277,7 @@ static void debugWindow()
         {
             ImGui::SeparatorText("Tonemapping");
             ImGui::SliderFloat("Exposure", &exposure, 0.0f, 10.0f);
+            ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 5.0f);
 
             ImGui::SeparatorText("Display");
             ImGui::SliderFloat("Gamma", &gamma, 0.1f, 10.0f);
@@ -276,7 +290,10 @@ static void debugWindow()
 
     ImGui::End();
 
+    setVsync(vsync);
+
     setVisualizeMode((VisualizeMode)visualizeMode);
+    setVisualizeCompositor((CompositorID)compositor);
     setWireframe(wireframe);
 
     skybox->setSunAltitude(sunAltitude);
@@ -289,6 +306,7 @@ static void debugWindow()
 
     setExposure(exposure);
     setGamma(gamma);
+    setBloomStrength(bloomStrength);
 }
 
 static void initTerrainMaterials()
@@ -313,7 +331,7 @@ static void initWater()
     water->load(kTerrainSize, kTerrainSize, 10);
 
     Material *material = water->getMaterial();
-    material->normal.load("assets/water.jpg");
+    material->normal.load("assets/water.jpg", COLOR_SPACE_LINEAR);
 
     water->setEnabled(true);
 }

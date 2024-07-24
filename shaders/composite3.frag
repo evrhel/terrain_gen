@@ -4,6 +4,7 @@
 
 uniform float uGamma;
 uniform float uExposure;
+uniform float uBloomStrength;
 
 void main()
 {
@@ -20,7 +21,7 @@ void main()
 
     /* Bloom */
     vec3 bloom = texture(uTexture1, fs_in.TexCoords).rgb;
-    colorLinear += bloom;
+    colorLinear += bloom * uBloomStrength;
 
     /* Tonemapping */
     colorLinear = 1.0 - exp(-colorLinear * uExposure);
