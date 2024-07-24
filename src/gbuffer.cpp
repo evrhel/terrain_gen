@@ -76,10 +76,10 @@ void Gbuffer::resize(GLsizei width, GLsizei height)
     /* Material */
     setupGbufferTexture(
         _textures[GBUFFER_MATERIAL],
-        GL_RGB8,
+        GL_R32UI,
         width, height,
-        GL_RGB,
-        GL_UNSIGNED_BYTE);
+        GL_RED_INTEGER,
+        GL_UNSIGNED_INT);
 
     /* Attach to framebuffer */
     for (int32_t i = 0; i < GBUFFER_NUM_TEXTURES; i++)

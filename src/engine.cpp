@@ -198,6 +198,8 @@ static float _deltaTime;
 static bool _keys[SDL_NUM_SCANCODES];
 static bool _mouseButtons[8];
 static IntVector2 _mousePosition;
+static IntVector2 _mouseDelta;
+static IntVector2 _scroll;
 
 static Shader *_shaders[SHADER_COUNT];
 static Gbuffer *_gbuffer;
@@ -219,6 +221,8 @@ static bool _wireframe = false;
 
 static float _exposure = 1.0f;
 static float _gamma = 2.2f;
+
+#define SIZE_EV 64
 
 static bool pollEvents()
 {
@@ -260,6 +264,12 @@ static bool pollEvents()
         case SDL_EVENT_MOUSE_MOTION:
             _mousePosition.x = evt.motion.x;
             _mousePosition.y = evt.motion.y;
+            _mouseDelta.x += evt.motion.xrel;
+            _mouseDelta.y += evt.motion.yrel;
+            break;
+        case SDL_EVENT_MOUSE_WHEEL:
+            _scroll.x += evt.wheel.x;
+            _scroll.y += evt.wheel.y;
             break;
         }
     }
@@ -308,7 +318,6 @@ namespace
 #include <shaders/downsample.frag.h>
 #include <shaders/generic.frag.h>
 #include <shaders/generic.vert.h>
-#include <shaders/perlin.frag.h>
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
@@ -349,9 +358,6 @@ static void loadShaders()
 
     Shader *visualize = getShader(SHADER_VISUALIZE);
     visualize->load("visualize", screen_vert_source, visualize_frag_source);
-
-    Shader *perlin = getShader(SHADER_PERLIN);
-    perlin->load("perlin", screen_vert_source, perlin_frag_source);
 
     Shader *downsample = getShader(SHADER_DOWNSAMPLE);
     downsample->load("downsample", screen_vert_source, downsample_frag_source);
@@ -586,6 +592,16 @@ const IntVector2 &getMousePos()
     return _mousePosition;
 }
 
+const IntVector2 &getMouseDelta()
+{
+    return _mouseDelta;
+}
+
+const IntVector2 &getScroll()
+{
+    return _scroll;
+}
+
 void drawQuad()
 {
     glBindVertexArray(_quadVao);
@@ -603,6 +619,8 @@ bool beginFrame()
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    _mouseDelta = IntVector2{0, 0};
+    _scroll = IntVector2{0, 0};
     return pollEvents();
 }
 
@@ -655,6 +673,7 @@ void renderAll()
     {
         if (terrain->enabled())
         {
+            terrain->update();
             terrain->render(terrainShader);
         }
     }

@@ -5,6 +5,7 @@
 layout (quads, fractional_odd_spacing, cw) in;
 
 uniform mat4 uModel;
+uniform mat3 uNormalMatrix;
 
 uniform sampler2D uHeightmap;
 uniform sampler2D uNormalmap;
@@ -48,13 +49,13 @@ void main()
 
     vec4 pos = (p1 - p0) * v + p0;
 
-    tes_out.Height = texture(uHeightmap, texCoord).r / 2.0;
+    tes_out.Height = texture(uHeightmap, texCoord).r;
     tes_out.Normal = texture(uNormalmap, texCoord).xyz;
 
     vec4 p = pos + normal * tes_out.Height;
 
     mat4 modelView = uCamera.view * uModel;
-    mat3 normalMatrix = transpose(inverse(mat3(modelView)));
+    mat3 normalMatrix = mat3(uCamera.view) * uNormalMatrix;
 
     /* Surface normal */
     tes_out.Normal = normalize(normalMatrix * tes_out.Normal);

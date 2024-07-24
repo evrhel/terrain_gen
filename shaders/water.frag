@@ -1,9 +1,9 @@
 #version 410 core
 
-@include "lib/types.glsl"
-@include "lib/gbuffer.glsl"
+@include "lib/gbuffer_base.glsl"
 @include "lib/atmosphere.glsl"
 @include "lib/camera.glsl"
+@include "lib/material.glsl"
 
 in TES_OUT
 {
@@ -15,12 +15,11 @@ in TES_OUT
 } fs_in;
 
 uniform float uScale;
-uniform Material uMaterial;
+uniform MaterialSpec uMaterial;
 
 const vec3 kAlbedo = vec3(0.0, 0.0, 0.0);
-const vec3 kMaterial = vec3(0.1, 0.9, 1.0);
 
-const float kNormalStrength = 0.33;
+const float kNormalStrength = 0.15;
 
 const float kThresholdMap[64] = float[](
 	0, 32, 8, 40, 2, 34, 10, 42,
@@ -42,7 +41,7 @@ void main()
         PositionOut = vec4(0.0, 0.0, 0.0, 1.0);
         DepthOut = vec4(gl_FragCoord.zzz, 1.0);
         NormalOut = vec4(0.0, 0.0, 0.0, 1.0);
-        MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
+        MaterialOut = uvec4(0, 0, 0, 1);
         return;
     }
 
@@ -70,10 +69,17 @@ void main()
     if (fresnel < threshold)
         discard;
 
+    MaterialInfo material;
+    material.roughness = 0.0;
+    material.metallic = 0.0;
+    material.ao = 0.0;
+    material.lit = false;
+    material.reflective = true;
+
     Albedo = vec4(0.0, 0.0, 0.0, 1.0);
     Emissive = vec4(0.0, 0.0, 0.0, 1.0);
     PositionOut = vec4(fs_in.FragPos, 1.0);
     DepthOut = vec4(gl_FragCoord.zzz, 1.0);
     NormalOut = vec4(N, 1.0);
-    MaterialOut = vec4(kMaterial, 1.0);
+    MaterialOut = encodeMaterial(material);
 }

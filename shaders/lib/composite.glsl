@@ -1,10 +1,18 @@
-@include "types.glsl"
-
 /* Output color buffers */
 layout (location = 0) out vec4 Color0;
 layout (location = 1) out vec4 Color1;
 layout (location = 2) out vec4 Color2;
 layout (location = 3) out vec4 Color3;
+
+struct Gbuffer
+{
+    sampler2D albedo;
+    sampler2D emissive;
+    sampler2D position;
+    sampler2D depth;
+    sampler2D normal;
+    usampler2D material; // Encoded material properties, see material.glsl
+};
 
 in VS_OUT
 {

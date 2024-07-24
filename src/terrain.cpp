@@ -14,8 +14,8 @@
 
 void Terrain::render(Shader *shader) const
 {
-    shader->setMatrix4("uModel", Matrix4(1.0f));
-    shader->setFloat("uScale", _scale);
+    shader->setMatrix4("uModel", _model);
+    shader->setMatrix3("uNormalMatrix", _normalMatrix);
 
     if (_hasHeightMap)
     {
@@ -37,9 +37,25 @@ void Terrain::render(Shader *shader) const
     glDrawArrays(GL_PATCHES, 0, _nVertices);
 }
 
-void Terrain::load(float width, float height, uint32_t resolution, float scale)
+void Terrain::update()
 {
-    _scale = scale;
+    if (!_dirty)
+        return;
+
+    _model = Matrix4(1.0f);
+    _model = mutil::translate(_model, _position);
+    _model = _model * mutil::torotation(_rotation);
+    _model = mutil::scale(_model, _scale);
+
+    _invModel = mutil::inverse(_model);
+
+    _normalMatrix = Matrix3(mutil::transpose(_invModel));
+
+    _dirty = false;
+}
+
+void Terrain::load(float width, float height, uint32_t resolution)
+{
     _hasHeightMap = false;
 
     /* Generate vertices */
@@ -104,9 +120,12 @@ void Terrain::load(float width, float height, uint32_t resolution, float scale)
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    _width = width;
+    _height = height;
 }
 
-void Terrain::load(const char *folder, float width, float height, uint32_t resolution, float scale)
+void Terrain::load(const char *folder, uint32_t resolution)
 {
     std::string dir(folder);
     std::string infoFile = dir + "/heightmap.txt";
@@ -127,7 +146,7 @@ void Terrain::load(const char *folder, float width, float height, uint32_t resol
     fclose(file);
 
     /* Setup main terrain */
-    load(width, height, resolution, scale);
+    load(hmWidth, hmHeight, resolution);
 
     /* Load heightmap */
     file = fopen(heightmapFile.c_str(), "rb");
@@ -150,8 +169,8 @@ void Terrain::load(const char *folder, float width, float height, uint32_t resol
     glBindTexture(GL_TEXTURE_2D, _heightMap);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, hmWidth, hmHeight, 0, GL_RED, GL_HALF_FLOAT, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -178,8 +197,8 @@ void Terrain::load(const char *folder, float width, float height, uint32_t resol
     glBindTexture(GL_TEXTURE_2D, _normalMap);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hmWidth, hmHeight, 0, GL_RGB, GL_HALF_FLOAT, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -201,11 +220,13 @@ void Terrain::release()
 
 Terrain::Terrain() : _vao(0), _vbo(0),
                      _nVertices(0),
+                     _width(0.0f), _height(0.0f),
                      _refs(1),
                      _enabled(true),
                      _hasHeightMap(false),
                      _heightMap(0), _normalMap(0),
-                     _useMaterials(true)
+                     _useMaterials(true),
+                     _dirty(true)
 {
 }
 

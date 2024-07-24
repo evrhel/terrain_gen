@@ -1,6 +1,8 @@
 #version 410 core
 
 @include "lib/composite.glsl"
+@include "lib/material.glsl"
+@include "lib/camera.glsl"
 
 const int kVisualizeAlbedo = 1;
 const int kVisualizeEmissive = 2;
@@ -28,15 +30,25 @@ void main()
     }
     else if (uMode == kVisualizeDepth)
     {
-        color = texture(uGbuffer.depth, fs_in.TexCoords).rrr;
+        /* Linearize depth */
+        float depth = texture(uGbuffer.depth, fs_in.TexCoords).r;  
+        depth = (2.0 * uCamera.near) / (uCamera.far + uCamera.near - depth * (uCamera.far - uCamera.near));
+
+        color = vec3(depth);
     }
     else if (uMode == kVisualizeNormal)
     {
-        color = texture(uGbuffer.normal, fs_in.TexCoords).rgb * 0.5 + 0.5;
+        /* World-space normal */
+        vec3 N = texture(uGbuffer.normal, fs_in.TexCoords).rgb;
+        N = vec3(uCamera.invView * vec4(N, 0.0));
+
+        color = N * 0.5 + 0.5;
     }
     else if (uMode == kVisualizeMaterial)
     {
-        color = texture(uGbuffer.material, fs_in.TexCoords).rgb;
+        MaterialInfo material;
+        decodeMaterial(texture(uGbuffer.material, fs_in.TexCoords), material);
+        color = vec3(material.roughness, material.metallic, material.ao);
     }
     
     Color0 = vec4(color, 1.0);

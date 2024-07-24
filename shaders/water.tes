@@ -4,8 +4,9 @@
 
 layout (quads, fractional_odd_spacing, cw) in;
 
-uniform float uScale;
 uniform mat4 uModel;
+uniform mat3 uNormalMatrix;
+
 uniform float uTime;
 
 in vec2 TexCoords[];
@@ -35,7 +36,7 @@ float sampleWater(vec2 texCoord)
     float a = sin(texCoord.x * kFrequency) * cos(texCoord.y * kFrequency) * 0.3325;
     float b = sin(texCoord.x * kFrequency * 0.5) * cos(texCoord.y * kFrequency * 0.5) * 1.75;
     float c = sin(texCoord.x * kFrequency * 0.25) * cos(texCoord.y * kFrequency * 0.25) * 2.5;
-    return (a + b + c) * uScale;
+    return a + b + c;
 }
 
 void main()
@@ -80,7 +81,7 @@ void main()
     vec4 p = pos + normal * tes_out.Height;
 
     mat4 modelView = uCamera.view * uModel;
-    mat3 normalMatrix = transpose(inverse(mat3(modelView)));
+    mat3 normalMatrix = mat3(uCamera.view) * uNormalMatrix;
 
     /* Surface normal */
     tes_out.Normal = normalize(normalMatrix * tes_out.Normal);

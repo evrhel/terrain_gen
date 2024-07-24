@@ -3,6 +3,8 @@
 @include "lib/composite.glsl"
 @include "lib/atmosphere.glsl"
 @include "lib/camera.glsl"
+@include "lib/utils.glsl"
+@include "lib/material.glsl"
 
 const float kPI = 3.14159265359;
 const float kFogDensity = 0.0003;
@@ -23,7 +25,7 @@ float distributionGGX(vec3 N, vec3 H, float roughness)
     float denom = NdotH2 * (a2 - 1.0) + 1.0;
     denom = kPI * denom * denom;
 
-    return num / denom;
+    return num / max(denom, 0.000001);
 }
 
 float geometrySchlickGGX(float NdotV, float roughness)
@@ -106,31 +108,37 @@ void main()
         return;
     }
 
+    /* Sample material */
+    MaterialInfo material;
+    decodeMaterial(texture(uGbuffer.material, fs_in.TexCoords), material);
+    if (!material.lit)
+    {
+        Color0 = vec4(albedo + emissive, 1.0);
+        Color1 = vec4(0.0);
+        Color2 = vec4(0.0);
+        Color3 = vec4(0.0);
+        return;
+    }
+
     /* Convert normal to world-space */
-    N = normalize(uCamera.invView * vec4(N, 0.0)).xyz;
-    
+    N = normalize(vec3(uCamera.invView * vec4(N, 0.0)));
+
     /* Sample gbuffer */
     vec3 fragpos = texture(uGbuffer.position, fs_in.TexCoords).rgb;
     fragpos = nvec3(uCamera.invView * nvec4(fragpos));
 
-    /* Sample material */
-    vec3 material = texture(uGbuffer.material, fs_in.TexCoords).rgb;
-    float roughness = material.r;
-    float metallic = material.g;
-    float ao = material.b;
-
     /* Lighting */
-    vec3 lighting = calcSun(fragpos, N, metallic, roughness, albedo);
+    vec3 lighting = calcSun(fragpos, N, material.metallic, material.roughness, albedo);
 
     /* Ambient */
-    float kD = 1.0 - metallic;
+    float kD = 1.0 - material.metallic;
     vec3 irradiance = sampleAtmosphere(N);
     vec3 diffuse = irradiance * albedo;
     
-    vec3 V = normalize(fragpos - uCamera.position);
+    vec3 V = normalize(uCamera.position - fragpos);
     vec3 reflection = sampleAtmosphere(reflect(V, N));
 
-    vec3 ambient = mix(reflection, diffuse, kD) * ao; //kD * diffuse;// * ao;
+    vec3 ambient = kD * diffuse * material.ao;
 
     /* Final color */
     vec3 color = lighting + ambient;

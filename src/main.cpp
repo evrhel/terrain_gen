@@ -10,19 +10,28 @@
 
 #include <imgui.h>
 
-static constexpr float kMoveSpeed = 16.0f;
+static constexpr float kMinMoveSpeed = 0.0f;
+static constexpr float kMaxMoveSpeed = 100.0f;
+static float moveSpeed = 16.0f;
+
 static constexpr float kShiftMultiplier = 10.0f;
 static constexpr float kTurnSpeed = 90.0f;
+
+static constexpr float kIntrinsicSensitivity = 2.0f;
+static float mouseSensitivity = 5.0f;
+static float fov = 45.0f;
+static float near = 0.1f;
+static float far = 2048.0f;
 
 static constexpr float kSunAltitude = 25.0f;
 static constexpr float kSunAzimuth = 15.0f;
 static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
-static constexpr float kSunIntensity = 1.0f;
+static constexpr float kSunIntensity = 5.0f;
 static constexpr float kSunTightness = 500.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
 static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
 
-static constexpr int kTerrainSize = 4096;
+static constexpr int kTerrainSize = 8192;
 
 static Terrain *terrain;
 
@@ -36,7 +45,11 @@ int main(int argc, char *argv[])
 
     terrain = new Terrain();
     //terrain->load(kTerrainSize, kTerrainSize, 20, 128.0f);
-    terrain->load("assets/terrain", kTerrainSize, kTerrainSize, 20, 4.0f);
+    terrain->load("assets/terrain", 20);
+
+    Vector3 terrainScale = Vector3(kTerrainSize, 1.0f, kTerrainSize) / Vector3(terrain->width(), 1.0f, terrain->height());
+    terrain->setScale(terrainScale);
+
     addTerrain(terrain);
 
     initTerrainMaterials();
@@ -44,45 +57,102 @@ int main(int argc, char *argv[])
     initWater();
 
     Camera *camera = getCamera();
-    camera->setFar(2048.0f);
+    camera->setFov(fov);
+    camera->setNear(near);
+    camera->setFar(far);
+
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    bool lastEscape = false, lastF11 = false;
+    bool mouseLocked = true, fullscreen = false;
 
     while (beginFrame())
     {
+        bool escape = getKey(SDL_SCANCODE_ESCAPE);
+        bool f11 = getKey(SDL_SCANCODE_F11);
+
+        if (!lastEscape && escape)
+        {
+            mouseLocked = !mouseLocked;
+            SDL_SetRelativeMouseMode(mouseLocked);
+        }
+
+        if (!lastF11 && f11)
+        {
+            fullscreen = !fullscreen;
+
+            SDL_Window *window = getWindow();
+            SDL_DisplayID display = SDL_GetDisplayForWindow(window);
+            const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(display);
+
+
+            if (fullscreen)
+            {
+                SDL_SetWindowSize(window, mode->w, mode->h);
+                SDL_SetWindowFullscreen(window, SDL_TRUE);
+            }
+            else
+            {
+                int width = mode->w * 2 / 3;
+                int height = mode->h * 2 / 3;
+
+                SDL_SetWindowSize(window, width, height);
+                SDL_SetWindowFullscreen(window, SDL_FALSE);
+                SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            }
+        }
+
+        lastF11 = f11;
+        lastEscape = escape;
+
         float dt = deltaTime();
 
         float pitch = camera->pitch();
+        float yaw = camera->yaw();
+
+        if (mouseLocked)
+        {
+            const IntVector2 &mouseDelta = getMouseDelta();
+            pitch -= mouseSensitivity * mouseDelta.y * dt * kIntrinsicSensitivity;
+            yaw -= mouseSensitivity * mouseDelta.x * dt * kIntrinsicSensitivity;
+        }
+
         if (getKey(SDL_SCANCODE_UP))
             pitch += kTurnSpeed * dt;
         if (getKey(SDL_SCANCODE_DOWN))
             pitch -= kTurnSpeed * dt;
-        pitch = mutil::clamp(pitch, -89.0f, 89.0f);
-        camera->setPitch(pitch);
 
-        float yaw = camera->yaw();
         if (getKey(SDL_SCANCODE_LEFT))
             yaw += kTurnSpeed * dt;
         if (getKey(SDL_SCANCODE_RIGHT))
             yaw -= kTurnSpeed * dt;
+        
+        pitch = mutil::clamp(pitch, -89.0f, 89.0f);
+        camera->setPitch(pitch);
         camera->setYaw(yaw);
 
-        Vector3 position = camera->position();
-        float moveSpeed = getKey(SDL_SCANCODE_LSHIFT) ? kMoveSpeed * kShiftMultiplier : kMoveSpeed;
-        if (getKey(SDL_SCANCODE_W))
-            position += moveSpeed * dt * camera->front();
-        if (getKey(SDL_SCANCODE_S))
-            position -= moveSpeed * dt * camera->front();
-        if (getKey(SDL_SCANCODE_A))
-            position -= moveSpeed * dt * camera->right();
-        if (getKey(SDL_SCANCODE_D))
-            position += moveSpeed * dt * camera->right();
-        if (getKey(SDL_SCANCODE_E))
-            position += moveSpeed * dt * kWorldUp;
-        if (getKey(SDL_SCANCODE_Q))
-            position -= moveSpeed * dt * kWorldUp;
-        camera->setPosition(position);
+        const IntVector2 &scroll = getScroll();
+        moveSpeed = mutil::clamp(moveSpeed + scroll.y * 2, kMinMoveSpeed, kMaxMoveSpeed);
 
-        Shader *perlinShader = getShader(SHADER_PERLIN);
-        perlinShader->use();
+        Vector3 position = camera->position();
+
+        float actualMoveSpeed = moveSpeed;
+        if (getKey(SDL_SCANCODE_LSHIFT))
+            actualMoveSpeed *= kShiftMultiplier;
+
+        if (getKey(SDL_SCANCODE_W))
+            position += actualMoveSpeed * dt * camera->front();
+        if (getKey(SDL_SCANCODE_S))
+            position -= actualMoveSpeed * dt * camera->front();
+        if (getKey(SDL_SCANCODE_A))
+            position -= actualMoveSpeed * dt * camera->right();
+        if (getKey(SDL_SCANCODE_D))
+            position += actualMoveSpeed * dt * camera->right();
+        if (getKey(SDL_SCANCODE_E))
+            position += actualMoveSpeed * dt * kWorldUp;
+        if (getKey(SDL_SCANCODE_Q))
+            position -= actualMoveSpeed * dt * kWorldUp;
+        camera->setPosition(position);
 
         debugWindow();
 
@@ -129,14 +199,25 @@ static void debugWindow()
 
         if (ImGui::BeginTabItem("Camera"))
         {
+            Camera *camera = getCamera();
+
+            ImGui::SeparatorText("Options");
+
+            ImGui::SliderFloat("Sensitivity", &mouseSensitivity, 0.1f, 10.0f);
+            ImGui::SliderFloat("FOV", &fov, 1.0f, 179.0f);
+            ImGui::SliderFloat("Near", &near, 0.1f, 1.0f);
+            ImGui::SliderFloat("Far", &far, 1.0f, 10000.0f);
+            ImGui::SliderFloat("Move Speed", &moveSpeed, kMinMoveSpeed, kMaxMoveSpeed);
+
+            camera->setFov(fov);
+            camera->setNear(near);
+            camera->setFar(far);
+
             ImGui::SeparatorText("Camera");
 
-            Camera *camera = getCamera();
             ImGui::InputFloat3("Position", (float *)&camera->position(), "%.3f", ImGuiInputTextFlags_ReadOnly);
             ImGui::InputFloat("Pitch", (float *)camera->getPitch(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
             ImGui::InputFloat("Yaw", (float *)camera->getYaw(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-            ImGui::InputFloat("Near", (float *)camera->getNear(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
-            ImGui::InputFloat("Far", (float *)camera->getFar(), 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
             ImGui::InputFloat3("Front", (float *)&camera->front(), "%.3f", ImGuiInputTextFlags_ReadOnly);
 
             ImGui::EndTabItem();
@@ -161,7 +242,9 @@ static void debugWindow()
             ImGui::SliderFloat("Altitude", &sunAltitude, 0.0f, 360.0f);
             ImGui::SliderFloat("Azimuth", &sunAzimuth, 0.0f, 360.0f);
             ImGui::ColorEdit3("Color", (float *)&sunColor);
-            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 10.0f);
+            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 20.0f);
+
+            ImGui::InputFloat3("Direction", (float *)&skybox->sunDirection(), "%.3f", ImGuiInputTextFlags_ReadOnly);
 
             ImGui::PopID();
 
@@ -227,7 +310,7 @@ static void initTerrainMaterials()
 static void initWater()
 {
     Terrain *water = getWater();
-    water->load(kTerrainSize, kTerrainSize, 10, 0.5f);
+    water->load(kTerrainSize, kTerrainSize, 10);
 
     Material *material = water->getMaterial();
     material->normal.load("assets/water.jpg");

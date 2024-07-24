@@ -31,7 +31,6 @@ enum ShaderID
     SHADER_WATER,
 
     SHADER_VISUALIZE,
-    SHADER_PERLIN,
 
     SHADER_DOWNSAMPLE,
     SHADER_UPSAMPLE,
@@ -73,6 +72,8 @@ float deltaTime();
 bool getKey(int key);
 bool getMouseButton(int button);
 const IntVector2 &getMousePos();
+const IntVector2 &getMouseDelta();
+const IntVector2 &getScroll();
 
 void drawQuad();
 

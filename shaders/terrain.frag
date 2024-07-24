@@ -1,9 +1,10 @@
 #version 410 core
 
-@include "lib/types.glsl"
-@include "lib/gbuffer.glsl"
+@include "lib/gbuffer_base.glsl"
 @include "lib/atmosphere.glsl"
 @include "lib/camera.glsl"
+@include "lib/material.glsl"
+@include "lib/utils.glsl"
 
 in TES_OUT
 {
@@ -14,8 +15,7 @@ in TES_OUT
     mat3 TBN;
 } fs_in;
 
-uniform float uScale;
-uniform Material uMaterials[5];
+uniform MaterialSpec uMaterials[5];
 
 #define DIRT_INDEX 0
 #define GRASS_INDEX 1
@@ -144,7 +144,7 @@ void main()
         PositionOut = vec4(0.0, 0.0, 0.0, 1.0);
         DepthOut = vec4(gl_FragCoord.zzz, 1.0);
         NormalOut = vec4(0.0, 0.0, 0.0, 1.0);
-        MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
+        MaterialOut = uvec4(0, 0, 0, 1);
         return;
     }
 
@@ -152,22 +152,27 @@ void main()
     fragpos = nvec3(uCamera.invView * nvec4(fragpos));
 
     vec3 albedo;
-    vec3 normal;
+    vec3 N;
     float roughness;
     float metallic;
     float ao;
-    sampleTerrain(fragpos, albedo, normal, roughness, metallic, ao);
+    sampleTerrain(fragpos, albedo, N, roughness, metallic, ao);
 
-    vec3 material = vec3(roughness, metallic, ao);
+    MaterialInfo material;
+    material.roughness = roughness;
+    material.metallic = metallic;
+    material.ao = ao;
+    material.lit = true;
+    material.reflective = false;
 
     /* Compute normal */
-    normal = normal * 2.0 - 1.0;
-    normal = normalize(fs_in.TBN * normal);
+    N = N * 2.0 - 1.0;
+    N = normalize(fs_in.TBN * N);
 
     Albedo = vec4(albedo, 1.0);
     Emissive = vec4(0.0, 0.0, 0.0, 1.0);
     PositionOut = vec4(fs_in.FragPos, 1.0);
     DepthOut = vec4(gl_FragCoord.zzz, 1.0);
-    NormalOut = vec4(normal, 1.0);
-    MaterialOut = vec4(material, 1.0);
+    NormalOut = vec4(N, 1.0);
+    MaterialOut = encodeMaterial(material);
 }

@@ -3,6 +3,8 @@
 @include "lib/composite.glsl"
 @include "lib/camera.glsl"
 @include "lib/atmosphere.glsl"
+@include "lib/material.glsl"
+@include "lib/utils.glsl"
 
 vec3 sampleColor(vec2 uv)
 {
@@ -54,8 +56,14 @@ vec4 raytrace(vec3 fragpos, vec3 skycolor, vec3 rvector)
                 bool land = texture(uGbuffer.depth, pos.xy).r < comp;
                 if (land)
                 {
-                    color.rgb = sampleColor(pos.xy);
-                    color.a = 1.0;
+                    /* Do not reflect reflective materials */
+                    MaterialInfo material;
+                    decodeMaterial(texture(uGbuffer.material, pos.xy), material);
+                    if (!material.reflective)
+                    {
+                        color.rgb = sampleColor(pos.xy);
+                        color.a = 1.0;
+                    }
                 }
                 
                 break;
@@ -86,9 +94,11 @@ void main()
         return;
     }
 
-    /* Check if fully metallic */
-    vec3 material = texture(uGbuffer.material, fs_in.TexCoords).rgb;
-    if (material.b != 1.0)
+    /* Get material */
+    MaterialInfo material;
+    decodeMaterial(texture(uGbuffer.material, fs_in.TexCoords), material);
+
+    if (!material.reflective)
     {
         Color0 = vec4(baseColor, 1.0);
         Color1 = vec4(0.0);
@@ -120,7 +130,7 @@ void main()
     fresnel = mix(0.09, 1.0, fresnel); // F0
 
     vec4 viewDir = uCamera.invView * vec4(R, 0.0);
-    vec3 skyColor = sampleAtmosphere(viewDir.xyz);
+    vec3 skyColor = sampleAtmosphere(viewDir.xyz) + sampleSun(viewDir.xyz);
 
     vec4 reflection = raytrace(fragpos.xyz, skyColor, R);
 

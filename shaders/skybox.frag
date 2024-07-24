@@ -1,9 +1,9 @@
 #version 410 core
 
-@include "lib/gbuffer.glsl"
+@include "lib/gbuffer_base.glsl"
 @include "lib/atmosphere.glsl"
 @include "lib/camera.glsl"
-@include "lib/types.glsl"
+@include "lib/material.glsl"
 
 in VS_OUT
 {
@@ -18,14 +18,19 @@ void main()
     vec3 color = sampleAtmosphere(V);
 
     /* Draw sun */
-    float intensity = max(dot(V, -uAtmosphere.sunDirection), 0.0);
-    intensity = pow(intensity, uAtmosphere.sunTightness);
-    color += uAtmosphere.sunColor * intensity * uAtmosphere.sunIntensity;
+    color += sampleSun(V);
+
+    MaterialInfo material;
+    material.roughness = 0.0;
+    material.metallic = 0.0;
+    material.ao = 0.0;
+    material.lit = false;
+    material.reflective = false;
 
     Albedo = vec4(0.0, 0.0, 0.0, 1.0);
     Emissive = vec4(color, 1.0);
     PositionOut = vec4(fs_in.FragPos, 1.0);
     DepthOut = vec4(gl_FragCoord.zzz, 1.0);
     NormalOut = vec4(0.0, 0.0, 0.0, 1.0);
-    MaterialOut = vec4(0.0, 0.0, 0.0, 1.0);
+    MaterialOut = encodeMaterial(material);
 }

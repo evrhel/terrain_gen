@@ -29,12 +29,16 @@ class Terrain
 {
 public:
     void render(Shader *shader) const;
+    void update();
 
-    void load(float width, float height, uint32_t resolution, float scale);
-    void load(const char *folder, float width, float height, uint32_t resolution, float scale);
+    void load(float width, float height, uint32_t resolution);
+    void load(const char *folder, uint32_t resolution);
 
     void retain();
     void release();
+
+    constexpr float width() const { return _width; }
+    constexpr float height() const { return _height; }
 
     constexpr bool enabled() const { return _enabled; }
     constexpr void setEnabled(bool enabled) { _enabled = enabled; }
@@ -45,6 +49,33 @@ public:
     constexpr bool usesMaterials() const { return _useMaterials; }
     constexpr void setUseMaterials(bool use) { _useMaterials = use; }
 
+    constexpr void setPosition(const Vector3 &position)
+    {
+        _position = position;
+        _dirty = true;
+    }
+
+    constexpr const Vector3 &position() const { return _position; }
+
+    constexpr void setRotation(const Quaternion &rotation)
+    {
+		_rotation = rotation;
+		_dirty = true;
+	}
+
+    constexpr const Quaternion &rotation() const { return _rotation; }
+
+    constexpr void setScale(const Vector3 &scale)
+    {
+		_scale = scale;
+		_dirty = true;
+	}
+
+    constexpr const Vector3 &scale() const { return _scale; }
+
+    constexpr const Matrix4 &model() const { return _model; }
+    constexpr const Matrix4 &invModel() const { return _invModel; }
+
     Terrain();
     ~Terrain();
 
@@ -52,7 +83,7 @@ private:
     GLuint _vao, _vbo;
     GLsizei _nVertices;
 
-    float _scale;
+    float _width, _height;
 
     size_t _refs;
 
@@ -63,4 +94,12 @@ private:
 
     Material _materials[NUM_TERRAIN_MATERIALS];
     bool _useMaterials;
+
+    Vector3 _position;
+    Quaternion _rotation;
+    Vector3 _scale;
+    bool _dirty;
+
+    Matrix4 _model, _invModel;
+    Matrix3 _normalMatrix;
 };
