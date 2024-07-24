@@ -111,6 +111,10 @@ void Bloom::renderDownsamples(GLuint srcTexture) const
 
 void Bloom::renderUpsamples() const
 {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glBlendEquation(GL_FUNC_ADD);
+
     Shader *shader = getShader(SHADER_UPSAMPLE);
     shader->use();
 
@@ -131,4 +135,6 @@ void Bloom::renderUpsamples() const
 
         drawQuad();
     }
+
+    glDisable(GL_BLEND);
 }

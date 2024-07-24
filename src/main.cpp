@@ -26,8 +26,8 @@ static float far = 2048.0f;
 static constexpr float kSunAltitude = 25.0f;
 static constexpr float kSunAzimuth = 15.0f;
 static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
-static constexpr float kSunIntensity = 5.0f;
-static constexpr float kSunTightness = 500.0f;
+static constexpr float kSunIntensity = 8.0f;
+static constexpr float kSunTightness = 1000.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
 static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
 
@@ -182,7 +182,7 @@ static void debugWindow()
     static Vector3 zenithColor = kZenithColor;
 
     static float exposure = 1.0f;
-    static float bloomStrength = 1.0f;
+    static float bloomStrength = 0.2f;
     static float gamma = 2.2f;
 
     Skybox *skybox = getSkybox();
@@ -255,7 +255,7 @@ static void debugWindow()
             ImGui::SliderFloat("Altitude", &sunAltitude, 0.0f, 360.0f);
             ImGui::SliderFloat("Azimuth", &sunAzimuth, 0.0f, 360.0f);
             ImGui::ColorEdit3("Color", (float *)&sunColor);
-            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 20.0f);
+            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 50.0f);
 
             ImGui::InputFloat3("Direction", (float *)&skybox->sunDirection(), "%.3f", ImGuiInputTextFlags_ReadOnly);
 
@@ -266,7 +266,7 @@ static void debugWindow()
 
             ImGui::ColorEdit3("Horizon Color", (float *)&horizonColor);
             ImGui::ColorEdit3("Zenith Color", (float *)&zenithColor);
-            ImGui::SliderFloat("Sun Tightness", &sunTightness, 0.0f, 1000.0f);
+            ImGui::SliderFloat("Sun Tightness", &sunTightness, 0.0f, 1500.0f);
 
             ImGui::PopID();
 
@@ -277,7 +277,7 @@ static void debugWindow()
         {
             ImGui::SeparatorText("Tonemapping");
             ImGui::SliderFloat("Exposure", &exposure, 0.0f, 10.0f);
-            ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 5.0f);
+            ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 1.0f);
 
             ImGui::SeparatorText("Display");
             ImGui::SliderFloat("Gamma", &gamma, 0.1f, 10.0f);
