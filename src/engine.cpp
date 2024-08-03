@@ -7,6 +7,10 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_sdl3.h>
 
+#include <lysys/lysys.hpp>
+
+#include <half.hpp>
+
 #include "mesh.h"
 #include "shader.h"
 #include "skybox.h"
@@ -16,6 +20,7 @@
 #include "gbuffer.h"
 #include "terrain.h"
 #include "bloom.h"
+#include "generator.h"
 
 static const Vector4 kQuadVertices[] = {
     Vector4(-1.0f, -1.0f, 0.0f, 0.0f),
@@ -188,12 +193,16 @@ static SDL_GLContext _gl;
 
 static GLuint _quadVao, _quadVbo, _quadEbo;
 
+static constexpr int kNoiseTexSize = 128;
+static GLuint _noiseTex;
+
 static IntVector2 _windowSize;
 
 static double _startTime;
 
 static float _startFrameTime;
 static float _deltaTime;
+static int _frame;
 
 static bool _keys[SDL_NUM_SCANCODES];
 static bool _mouseButtons[8];
@@ -204,6 +213,7 @@ static IntVector2 _scroll;
 static Shader *_shaders[SHADER_COUNT];
 static Gbuffer *_gbuffer;
 static Compositor *_compositors[COMPOSITOR_COUNT];
+static Compositor *_final;
 static Compositor *_visualizer;
 static Bloom *_bloom;
 
@@ -213,6 +223,7 @@ static std::vector<RenderableMesh *> _meshes;
 static std::vector<Terrain *> _terrains;
 static Terrain *_water;
 static Skybox *_skybox;
+static Generator *_generator;
 
 static Mesh *_cube;
 
@@ -225,6 +236,8 @@ static float _gamma = 2.2f;
 static float _bloomStrength = 1.0f;
 
 static bool _vsync = true;
+
+static bool _fxaa = true;
 
 #define SIZE_EV 64
 
@@ -250,6 +263,7 @@ static bool pollEvents()
 
             for (int i = 0; i < COMPOSITOR_COUNT; i++)
 				_compositors[i]->resize(_windowSize.x, _windowSize.y);
+            _final->resize(_windowSize.x, _windowSize.y);
             _visualizer->resize(_windowSize.x, _windowSize.y);
 
             break;
@@ -266,14 +280,14 @@ static bool pollEvents()
             _mouseButtons[evt.button.button] = false;
             break;
         case SDL_EVENT_MOUSE_MOTION:
-            _mousePosition.x = evt.motion.x;
-            _mousePosition.y = evt.motion.y;
-            _mouseDelta.x += evt.motion.xrel;
-            _mouseDelta.y += evt.motion.yrel;
+            _mousePosition.x = (int32_t)evt.motion.x;
+            _mousePosition.y = (int32_t)evt.motion.y;
+            _mouseDelta.x += (int32_t)evt.motion.xrel;
+            _mouseDelta.y += (int32_t)evt.motion.yrel;
             break;
         case SDL_EVENT_MOUSE_WHEEL:
-            _scroll.x += evt.wheel.x;
-            _scroll.y += evt.wheel.y;
+            _scroll.x += (int32_t)evt.wheel.x;
+            _scroll.y += (int32_t)evt.wheel.y;
             break;
         }
     }
@@ -313,6 +327,36 @@ static void destroyQuad()
     glDeleteVertexArrays(1, &_quadVao);
 }
 
+static void createNoiseTex()
+{
+    constexpr int kCount = kNoiseTexSize * kNoiseTexSize;
+    half_float::half *noiseTex = new half_float::half[kCount];
+
+    for (int i = 0; i < kCount; i++)
+        noiseTex[i] = ls_rand_float();
+
+    glGenTextures(1, &_noiseTex);
+
+    glBindTexture(GL_TEXTURE_2D, _noiseTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, kNoiseTexSize, kNoiseTexSize, 0, GL_RED, GL_HALF_FLOAT, noiseTex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    delete[] noiseTex;
+
+    checkGLErrors("createNoiseTex");
+}
+
+static void destroyNoiseTex()
+{
+    glDeleteTextures(1, &_noiseTex);
+}
+
 /* Sources */
 namespace
 {
@@ -320,11 +364,15 @@ namespace
 #include <shaders/composite2.frag.h>
 #include <shaders/composite3.frag.h>
 #include <shaders/downsample.frag.h>
+#include <shaders/final.frag.h>
 #include <shaders/generic.frag.h>
 #include <shaders/generic.vert.h>
 #include <shaders/screen.vert.h>
 #include <shaders/skybox.frag.h>
 #include <shaders/skybox.vert.h>
+#include <shaders/skydome.vert.h>
+#include <shaders/skydome.geom.h>
+#include <shaders/skydome.frag.h>
 #include <shaders/terrain.frag.h>
 #include <shaders/terrain.tcs.h>
 #include <shaders/terrain.tes.h>
@@ -351,11 +399,17 @@ static void loadShaders()
     Shader *composite3 = getShader(SHADER_COMPOSITE3);
     composite3->load("composite3", screen_vert_source, composite3_frag_source);
 
+    Shader *final = getShader(SHADER_FINAL);
+    final->load("final", screen_vert_source, final_frag_source);
+
     Shader *generic = getShader(SHADER_GENERIC);
     generic->load("generic", generic_vert_source, generic_frag_source);
 
     Shader *skybox = getShader(SHADER_SKYBOX);
     skybox->load("skybox", skybox_vert_source, skybox_frag_source);
+
+    Shader *skydome = getShader(SHADER_SKYDOME);
+    skydome->loadGeom("skydome", skydome_vert_source, skydome_geom_source, skydome_frag_source);
 
     Shader *terrain = getShader(SHADER_TERRAIN);
     terrain->loadTess("terrain", terrain_vert_source, terrain_frag_source, terrain_tcs_source, terrain_tes_source);
@@ -405,8 +459,15 @@ static void loadCompositors(GLsizei width, GLsizei height)
 
     /* Compositor 3 */
     Compositor *compositor3 = new Compositor();
-    compositor3->load(nullptr, 0); // No outputs, go to screen
+    texture0.internalFormat = GL_R11F_G11F_B10F;
+    texture0.format = GL_RGB;
+    texture0.type = GL_FLOAT;
+    compositor3->load(outputs, 1);
     _compositors[COMPOSITOR3] = compositor3;
+
+    /* Final */
+    _final = new Compositor();
+    _final->load(nullptr, 0); // No outputs, go to screen
 
     /* Visualizer */
     _visualizer = new Compositor();
@@ -415,11 +476,15 @@ static void loadCompositors(GLsizei width, GLsizei height)
     /* Initial resize */
     for (int i = 0; i < COMPOSITOR_COUNT; i++)
         _compositors[i]->resize(width, height);
+    _final->resize(width, height);
     _visualizer->resize(width, height);
 }
 
 static void destroyCompositors()
 {
+    delete _visualizer;
+    delete _final;
+
     for (int i = 0; i < COMPOSITOR_COUNT; i++)
         delete _compositors[i];
 }
@@ -472,6 +537,8 @@ void initAll(int argc, char *argv[])
     _cube = new Mesh();
     _cube->load(kCubeVertices, CUBE_VERTEX_COUNT, kCubeIndices, CUBE_INDEX_COUNT);
 
+    createNoiseTex();
+
     /* Enable vsync */
     _vsync = true;
     SDL_GL_SetSwapInterval(_vsync ? 1 : 0);
@@ -509,9 +576,13 @@ void initAll(int argc, char *argv[])
     _water->setUseMaterials(false);
     _water->setEnabled(false);
 
+    /* Create terrain generator */
+    _generator = new Generator();
+
     /* Initialize time */
     _startTime = ls_time64();
     _startFrameTime = _startTime;
+    _frame = 0;
 }
 
 void quitAll()
@@ -526,7 +597,12 @@ void quitAll()
         mesh->release();
     _meshes.clear();
 
+    delete _generator;
+
     delete _skybox;
+
+    unloadMaterials();
+    unloadTextures();
 
     delete _camera;
 
@@ -535,6 +611,8 @@ void quitAll()
     delete _gbuffer;
 
     destroyShaders();
+
+    destroyNoiseTex();
 
     _cube->release();
 
@@ -633,9 +711,15 @@ bool beginFrame()
 
 void renderAll()
 {
-    /* Update */
+    /* Update camera */
     _camera->update();
-    _skybox->update();
+
+    /* Re-render skybox if needed */
+    if (_skybox->update(_camera))
+    {
+        _skybox->renderSkybox();
+        _skybox->renderIrradiance();
+    }
 
     /* Render to Gbuffer */
 
@@ -646,6 +730,7 @@ void renderAll()
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     if (_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -658,6 +743,8 @@ void renderAll()
     genericShader->use();
 
     genericShader->setBool("uWireframe", _wireframe);
+    genericShader->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+    genericShader->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
 
     glDepthFunc(GL_LESS);
     for (RenderableMesh *mesh : _meshes)
@@ -675,6 +762,8 @@ void renderAll()
     terrainShader->use();
 
     terrainShader->setBool("uWireframe", _wireframe);
+    terrainShader->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+    terrainShader->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
 
     for (Terrain *terrain : _terrains)
     {
@@ -685,6 +774,10 @@ void renderAll()
         }
     }
 
+    /* Render generated terrain */
+    _generator->update();
+    _generator->render(terrainShader);
+
     /* Water */
     if (_water->enabled())
     {
@@ -694,6 +787,8 @@ void renderAll()
         waterShader->use();
 
         waterShader->setBool("uWireframe", _wireframe);
+        waterShader->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+        waterShader->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
 
         _water->render(waterShader);
 
@@ -708,6 +803,9 @@ void renderAll()
     Shader *skyboxShader = getShader(SHADER_SKYBOX);
     skyboxShader->use();
 
+    skyboxShader->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+    skyboxShader->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
+
     glDepthFunc(GL_LEQUAL);
     _skybox->render(skyboxShader);
 
@@ -719,12 +817,22 @@ void renderAll()
     if (_visualizeMode == VISUALIZE_NONE || _visualizeMode == VISUALIZE_COMPOSITOR)
     {
         Compositor *lastCompositor = nullptr;
-        for (int i = 0; i < COMPOSITOR_COUNT - 1; i++)
+        for (int i = 0; i < COMPOSITOR_COUNT; i++)
         {
-            Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + i));
+            ShaderID shaderID = (ShaderID)(SHADER_COMPOSITE1 + i);
+            Shader *s = getShader(shaderID);
             s->use();
 
+            if (shaderID == SHADER_COMPOSITE3)
+                s->setBool("uEnableFXAA", _fxaa);
+
             s->setBool("uWireframe", _wireframe);
+            s->setTexture("uNoiseTex", _noiseTex, 5);
+            s->setInt("uFrame", _frame);
+            s->setFloat("uTime", _startFrameTime);
+
+            s->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+            s->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
 
             Compositor *c = _compositors[i];
             c->bind();
@@ -741,22 +849,26 @@ void renderAll()
         {
             /* Final composite render */
 
-            Shader *s = getShader((ShaderID)(SHADER_COMPOSITE1 + COMPOSITOR_COUNT - 1));
+            Shader *s = getShader(SHADER_FINAL);
             s->use();
 
             s->setBool("uWireframe", _wireframe);
+            s->setTexture("uNoiseTex", _noiseTex, 5);
+            s->setInt("uFrame", _frame);
+            s->setFloat("uTime", _startFrameTime);
 
-            Compositor *c = _compositors[COMPOSITOR_COUNT - 1];
-            c->bind();
-
-            // s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
+            s->setTexture("uTexture0", lastCompositor->getTexture(0), 0);
             s->setTexture("uTexture1", _bloom->texture(), 1);
 
             s->setFloat("uGamma", _gamma);
             s->setFloat("uExposure", _exposure);
             s->setFloat("uBloomStrength", _bloomStrength);
 
-            c->render(s, _gbuffer, lastCompositor);
+            s->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
+            s->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
+
+            _final->bind();
+            _final->render(s, _gbuffer, lastCompositor);
         }
         else
         {
@@ -764,7 +876,7 @@ void renderAll()
             visualizeShader->use();
             visualizeShader->setInt("uMode", _visualizeMode);
 
-            if (_visualizeCompositor >= 0 && _visualizeCompositor < COMPOSITOR_COUNT - 1) // Skip final composite
+            if (_visualizeCompositor >= 0 && _visualizeCompositor < COMPOSITOR_COUNT)
             {
                 GLuint tex = _compositors[_visualizeCompositor]->getTexture(0);
                 visualizeShader->setTexture("uTexture0", tex, 0);
@@ -793,6 +905,8 @@ void endFrame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     SDL_GL_SwapWindow(_window);
+
+    _frame++;
 }
 
 Shader *getShader(ShaderID id)
@@ -859,6 +973,11 @@ Terrain *getWater()
 Skybox *getSkybox()
 {
     return _skybox;
+}
+
+Generator *getTerrainGenerator()
+{
+    return _generator;
 }
 
 Mesh *getCubeMesh()
@@ -933,4 +1052,19 @@ void setVsync(bool enabled)
         _vsync = enabled;
         SDL_GL_SetSwapInterval(_vsync ? 1 : 0);
     }
+}
+
+bool getFXAAEnabled()
+{
+    return _fxaa;
+}
+
+void setFXAAEnabled(bool enabled)
+{
+    _fxaa = enabled;
+}
+
+GLuint getNoise()
+{
+    return _noiseTex;
 }

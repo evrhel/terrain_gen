@@ -18,3 +18,15 @@ float cdist(vec2 coord)
 {
     return max(abs(coord.x - 0.5), abs(coord.y - 0.5)) * 2.0;
 }
+
+float edgefade(vec2 coord, float edge)
+{
+    float dT = 1.0 - coord.y;
+    float dB = coord.y;
+    float dR = 1.0 - coord.x;
+    float dL = coord.x;
+
+    float mindist = min(min(dT, dB), min(dR, dL));
+
+    return clamp(mindist / edge, 0.0, 1.0);
+}

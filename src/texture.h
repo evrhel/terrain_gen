@@ -4,13 +4,15 @@
 
 #include <glad/glad.h>
 
+#include "mem.h"
+
 enum ColorSpace
 {
     COLOR_SPACE_SRGB,
     COLOR_SPACE_LINEAR
 };
 
-class Texture2D final
+class Texture2D final : public Object
 {
 public:
     void load(GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
@@ -23,9 +25,12 @@ public:
     constexpr int height() const { return _height; }
 
     Texture2D();
-    ~Texture2D();
+    virtual ~Texture2D();
 
 private:
     GLuint _texture;
     int _width, _height;
 };
+
+AutoRelease<Texture2D> &loadTexture2D(const char *filename, ColorSpace colorSpace = COLOR_SPACE_SRGB);
+void unloadTextures();

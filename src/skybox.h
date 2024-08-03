@@ -8,14 +8,19 @@ using namespace mutil;
 class Shader;
 class Camera;
 
+#define SKYBOX_TEXTURE_UNIT 25
+#define IRRADIANCE_TEXTURE_UNIT 26
+
 class Skybox final
 {
 public:
+    void renderSkybox() const;
+    void renderIrradiance() const;
     void render(Shader *shader) const;
 
     void load();
 
-    void update();
+    bool update(const Camera *camera);
 
     constexpr float sunAltitude() const { return _altitude; }
 
@@ -73,15 +78,35 @@ public:
         _dirty = true;
     }
 
-    constexpr float atmosphereHeight() const { return _atmosphereHeight; }
+    constexpr float fogDensity() const { return _fogDensity; }
 
-    constexpr void setAtmosphereHeight(float height)
+    constexpr void setFogDensity(float density)
     {
-        _atmosphereHeight = height;
+        _fogDensity = density;
+        _dirty = true;
+    }
+
+    constexpr float planetRadius() const { return _planetRadius; }
+
+    constexpr void setPlanetRadius(float radius)
+    {
+		_planetRadius = radius;
+		_dirty = true;
+	}
+
+    constexpr float atmosphereRadius() const { return _atmosphereRadius; }
+
+    constexpr void setAtmosphereRadius(float radius)
+    {
+        _atmosphereRadius = radius;
         _dirty = true;
     }
 
     constexpr const Vector3 &sunDirection() const { return _sunDirection; }
+    constexpr const Vector3 &sunPosition() const { return _sunPosition; }
+
+    constexpr GLuint skybox() const { return _cubemap; }
+    constexpr GLuint irradiance() const { return _irradiance; }
 
     Skybox();
     ~Skybox();
@@ -98,12 +123,29 @@ private:
     float _sunTightness;
     Vector3 _horizonColor;
     Vector3 _zenithColor;
-    float _atmosphereHeight;
+
+    /* Fog */
+    float _fogDensity;
+
+    /* Atmosphere */
+    float _planetRadius;
+    float _atmosphereRadius;
 
     bool _dirty;
     GLuint _ubo;
 
     Vector3 _sunDirection;
+
+    Vector3 _sunPosition;
+    Vector3 _sunPositionWorld;
+
+    GLuint _skyQuadVAO, _skyQuadVBO;
+
+    GLuint _cubemapFBO;
+    GLuint _cubemap; // Skybox cubemap
+
+    GLuint _irradianceFBO;
+    GLuint _irradiance; // Irradiance cubemap
 
     void upload() const;
 };

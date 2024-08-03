@@ -82,6 +82,95 @@ void Shader::load(const char *name, const char *vertexSource, const char *fragme
     bindUniformBlock("Atmosphere", ATMOSPHERE_UNIFORM_BINDING);
 }
 
+void Shader::loadGeom(const char *name, const char *vertexSource, const char *geomSource, const char *fragmentSource)
+{
+    GLuint vert, geom, frag;
+    int success;
+    char infoLog[512];
+    bool hasError = false;
+
+    printf("Shader::loadGeom: Loading %s\n", name);
+
+    /* Compile vertex shader */
+
+    vert = glCreateShader(GL_VERTEX_SHADER);
+
+    glShaderSource(vert, 1, &vertexSource, NULL);
+    glCompileShader(vert);
+
+    glGetShaderiv(vert, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+		glGetShaderInfoLog(vert, 512, NULL, infoLog);
+		printf("Vertex shader compilation failed: %s\n", infoLog);
+		hasError = true;
+		glDeleteShader(vert);
+	}
+
+    /* Compile geometry shader */
+
+    geom = glCreateShader(GL_GEOMETRY_SHADER);
+
+    glShaderSource(geom, 1, &geomSource, NULL);
+    glCompileShader(geom);
+
+    glGetShaderiv(geom, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(geom, 512, NULL, infoLog);
+        printf("Geometry shader compilation failed: %s\n", infoLog);
+        hasError = true;
+        glDeleteShader(geom);
+    }
+
+    /* Compile fragment shader */
+
+    frag = glCreateShader(GL_FRAGMENT_SHADER);
+
+    glShaderSource(frag, 1, &fragmentSource, NULL);
+    glCompileShader(frag);
+
+    glGetShaderiv(frag, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+		glGetShaderInfoLog(frag, 512, NULL, infoLog);
+		printf("Fragment shader compilation failed: %s\n", infoLog);
+		hasError = true;
+		glDeleteShader(frag);
+	}
+
+    /* Link shaders */
+
+    _program = glCreateProgram();
+
+    glAttachShader(_program, vert);
+    glAttachShader(_program, geom);
+    glAttachShader(_program, frag);
+
+    glLinkProgram(_program);
+
+    glGetProgramiv(_program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+		glGetProgramInfoLog(_program, 512, NULL, infoLog);
+        hasError = true;
+		printf("Shader program linking failed: %s\n", infoLog);
+	}
+
+    if (hasError)
+		exit(1);
+
+    glDeleteShader(geom);
+	glDeleteShader(frag);
+	glDeleteShader(vert);
+
+	_name = name;
+
+	/* Bind standard buffers */
+	bindUniformBlock("Camera", CAMERA_UNIFORM_BINDING);
+	bindUniformBlock("Atmosphere", ATMOSPHERE_UNIFORM_BINDING);
+}
+
 void Shader::loadTess(const char *name, const char *vertexSource, const char *fragmentSource, const char *tessControlSource, const char *tessEvalSource)
 {
     GLuint vert, frag, tcs, tes;
@@ -336,69 +425,80 @@ void Shader::setTexture(const char *name, GLuint texture, int unit)
     }
 }
 
+void Shader::setCubemap(const char *name, GLuint texture, int unit)
+{
+    int loc = glGetUniformLocation(_program, name);
+    if (loc != -1)
+    {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+        glUniform1i(loc, unit);
+    }
+}
+
 void Shader::setMaterial(const Material &material)
 {
     /* Albedo */
-    setTexture("uMaterial.albedo.tex", material.albedo.get(), 0);
-    setBool("uMaterial.albedo.hasTex", material.albedo.get() != 0);
+    setTexture("uMaterial.albedo.tex", material.albedo ? material.albedo->get() : 0, 0);
+    setBool("uMaterial.albedo.hasTex", material.albedo);
     setVector3("uMaterial.albedo.color", material.albedoColor);
 
     /* Emissive */
-    setTexture("uMaterial.emissive.tex", material.emissive.get(), 1);
-    setBool("uMaterial.emissive.hasTex", material.emissive.get() != 0);
+    setTexture("uMaterial.emissive.tex", material.emissive ? material.emissive->get() : 0, 1);
+    setBool("uMaterial.emissive.hasTex", material.emissive);
     setVector3("uMaterial.emissive.color", material.emissiveColor);
 
     /* Normal */
-    setTexture("uMaterial.normal.tex", material.normal.get(), 2);
-    setBool("uMaterial.normal.hasTex", material.normal.get() != 0);
+    setTexture("uMaterial.normal.tex", material.normal ? material.normal->get() : 0, 2);
+    setBool("uMaterial.normal.hasTex", material.normal);
     setVector3("uMaterial.normal.color", material.normal.get() ? Vector3(1.0f) : kDefaultNormal);
 
     /* Roughness */
-    setTexture("uMaterial.roughness.tex", material.roughness.get(), 3);
-    setBool("uMaterial.roughness.hasTex", material.roughness.get() != 0);
+    setTexture("uMaterial.roughness.tex", material.roughness ? material.roughness->get() : 0, 3);
+    setBool("uMaterial.roughness.hasTex", material.roughness);
     setVector3("uMaterial.roughness.color", Vector3(material.roughnessValue));
 
     /* Metallic */
-    setTexture("uMaterial.metallic.tex", material.metallic.get(), 4);
-    setBool("uMaterial.metallic.hasTex", material.metallic.get() != 0);
+    setTexture("uMaterial.metallic.tex", material.metallic ? material.metallic->get() : 0, 4);
+    setBool("uMaterial.metallic.hasTex", material.metallic);
     setVector3("uMaterial.metallic.color", Vector3(material.metallicValue));
 
     /* AO */
-    setTexture("uMaterial.ao.tex", material.ao.get(), 5);
-    setBool("uMaterial.ao.hasTex", material.ao.get() != 0);
+    setTexture("uMaterial.ao.tex", material.ao ? material.ao->get() : 0, 5);
+    setBool("uMaterial.ao.hasTex", material.ao);
     setVector3("uMaterial.ao.color", Vector3(material.aoValue));
 }
 
 void Shader::setMaterial(int index, const Material &material)
 {
     /* Albedo */
-    setTexturef("uMaterials[%d].albedo.tex", material.albedo.get(), 0 + index * 6, index);
-    setBoolf("uMaterials[%d].albedo.hasTex", material.albedo.get() != 0, index);
+    setTexturef("uMaterials[%d].albedo.tex", material.albedo ? material.albedo->get() : 0, 0 + index * 6, index);
+    setBoolf("uMaterials[%d].albedo.hasTex", material.albedo, index);
     setVector3f("uMaterials[%d].albedo.color", material.albedoColor, index);
 
     /* Emissive */
-    setTexturef("uMaterials[%d].emissive.tex", material.emissive.get(), 1 + index * 6, index);
-    setBoolf("uMaterials[%d].emissive.hasTex", material.emissive.get() != 0, index);
+    setTexturef("uMaterials[%d].emissive.tex", material.emissive ? material.emissive->get() : 0, 1 + index * 6, index);
+    setBoolf("uMaterials[%d].emissive.hasTex", material.emissive, index);
     setVector3f("uMaterials[%d].emissive.color", material.emissiveColor, index);
 
     /* Normal */
-    setTexturef("uMaterials[%d].normal.tex", material.normal.get(), 2 + index * 6, index);
-    setBoolf("uMaterials[%d].normal.hasTex", material.normal.get() != 0, index);
+    setTexturef("uMaterials[%d].normal.tex", material.normal ? material.normal->get() : 0, 2 + index * 6, index);
+    setBoolf("uMaterials[%d].normal.hasTex", material.normal, index);
     setVector3f("uMaterials[%d].normal.color", material.normal.get() ? Vector3(1.0f) : kDefaultNormal, index);
 
     /* Roughness */
-    setTexturef("uMaterials[%d].roughness.tex", material.roughness.get(), 3 + index * 6, index);
-    setBoolf("uMaterials[%d].roughness.hasTex", material.roughness.get() != 0, index);
+    setTexturef("uMaterials[%d].roughness.tex", material.roughness ? material.roughness->get() : 0, 3 + index * 6, index);
+    setBoolf("uMaterials[%d].roughness.hasTex", material.roughness, index);
     setVector3f("uMaterials[%d].roughness.color", Vector3(material.roughnessValue), index);
 
     /* Metallic */
-    setTexturef("uMaterials[%d].metallic.tex", material.metallic.get(), 4 + index * 6, index);
-    setBoolf("uMaterials[%d].metallic.hasTex", material.metallic.get() != 0, index);
+    setTexturef("uMaterials[%d].metallic.tex", material.metallic ? material.metallic->get() : 0, 4 + index * 6, index);
+    setBoolf("uMaterials[%d].metallic.hasTex", material.metallic, index);
     setVector3f("uMaterials[%d].metallic.color", Vector3(material.metallicValue), index);
 
     /* AO */
-    setTexturef("uMaterials[%d].ao.tex", material.ao.get(), 5 + index * 6, index);
-    setBoolf("uMaterials[%d].ao.hasTex", material.ao.get() != 0, index);
+    setTexturef("uMaterials[%d].ao.tex", material.ao->get(), 5 + index * 6, index);
+    setBoolf("uMaterials[%d].ao.hasTex", material.ao, index);
     setVector3f("uMaterials[%d].ao.color", Vector3(material.aoValue), index);
 }
 

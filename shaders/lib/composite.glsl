@@ -1,3 +1,5 @@
+@include "noise.glsl"
+
 /* Output color buffers */
 layout (location = 0) out vec4 Color0;
 layout (location = 1) out vec4 Color1;
@@ -30,3 +32,12 @@ uniform sampler2D uTexture3;
 
 /* Whether wireframe mode is enabled */
 uniform bool uWireframe;
+
+/* Frame info */
+uniform int uFrame;
+uniform float uTime;
+
+float getNoise(vec2 coord, float offset, float speed)
+{
+    return getNoise(fract(coord * offset + uTime * speed)) / offset;
+}

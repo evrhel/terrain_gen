@@ -8,7 +8,7 @@
 
 using namespace mutil;
 
-struct Material;
+class Material;
 class Gbuffer;
 
 class Shader
@@ -17,6 +17,7 @@ public:
     void use() const;
 
     void load(const char *name, const char *vertexSource, const char *fragmentSource);
+    void loadGeom(const char *name, const char *vertexSource, const char *geomSource, const char *fragmentSource);
     void loadTess(const char *name, const char *vertexSource, const char *fragmentSource, const char *tessControlSource, const char *tessEvalSource);
 
     void setBool(const char *name, bool value);
@@ -29,6 +30,7 @@ public:
     void setMatrix4(const char *name, const Matrix4 &value);
 
     void setTexture(const char *name, GLuint texture, int unit);
+    void setCubemap(const char *name, GLuint texture, int unit);
     void setMaterial(const Material &material);
     void setMaterial(int index, const Material &material);
     void setGbuffer(const Gbuffer *gbuffer);

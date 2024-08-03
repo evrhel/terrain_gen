@@ -18,15 +18,18 @@ class Compositor;
 class Gbuffer;
 class Terrain;
 class Bloom;
+class Generator;
 
 enum ShaderID
 {
     SHADER_COMPOSITE1,
     SHADER_COMPOSITE2,
     SHADER_COMPOSITE3,
+    SHADER_FINAL,
 
     SHADER_GENERIC,
     SHADER_SKYBOX,
+    SHADER_SKYDOME,
     SHADER_TERRAIN,
     SHADER_WATER,
 
@@ -99,6 +102,8 @@ Terrain *getWater();
 
 Skybox *getSkybox();
 
+Generator *getTerrainGenerator();
+
 Mesh *getCubeMesh();
 
 VisualizeMode getVisualizeMode();
@@ -119,3 +124,8 @@ void setBloomStrength(float strength);
 
 bool getVsync();
 void setVsync(bool enabled);
+
+bool getFXAAEnabled();
+void setFXAAEnabled(bool enabled);
+
+GLuint getNoise();

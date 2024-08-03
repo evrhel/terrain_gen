@@ -2,6 +2,10 @@
 
 #include <utility>
 #include <cstdio>
+#include <unordered_map>
+#include <string>
+
+static std::unordered_map<std::string, AutoRelease<Material>> _materials;
 
 void Material::load(const char *name)
 {
@@ -10,40 +14,19 @@ void Material::load(const char *name)
     char path[256];
 
     snprintf(path, sizeof(path), "%s/albedo.png", name);
-    albedo.load(path, COLOR_SPACE_SRGB);
+    albedo = loadTexture2D(path, COLOR_SPACE_SRGB);
 
     snprintf(path, sizeof(path), "%s/normal.png", name);
-    normal.load(path, COLOR_SPACE_LINEAR);
+    normal = loadTexture2D(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/roughness.png", name);
-    roughness.load(path, COLOR_SPACE_LINEAR);
+    roughness = loadTexture2D(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/metallic.png", name);
-    metallic.load(path, COLOR_SPACE_LINEAR);
+    metallic = loadTexture2D(path, COLOR_SPACE_LINEAR);
 
     snprintf(path, sizeof(path), "%s/ao.png", name);
-    ao.load(path, COLOR_SPACE_LINEAR);
-}
-
-Material &Material::operator=(Material &&other) noexcept
-{
-    if (this == &other)
-        return *this;
-
-    albedo = std::move(other.albedo);
-    emissive = std::move(other.emissive);
-    normal = std::move(other.normal);
-    roughness = std::move(other.roughness);
-    metallic = std::move(other.metallic);
-    ao = std::move(other.ao);
-
-    albedoColor = other.albedoColor;
-    emissiveColor = other.emissiveColor;
-    roughnessValue = other.roughnessValue;
-    metallicValue = other.metallicValue;
-    aoValue = other.aoValue;
-
-    return *this;
+    ao = loadTexture2D(path, COLOR_SPACE_LINEAR);
 }
 
 Material::Material() : albedoColor(1.0f),
@@ -54,16 +37,23 @@ Material::Material() : albedoColor(1.0f),
 {
 }
 
-Material::Material(Material &&other) noexcept : albedo(std::move(other.albedo)),
-                                                emissive(std::move(other.emissive)),
-                                                normal(std::move(other.normal)),
-                                                roughness(std::move(other.roughness)),
-                                                metallic(std::move(other.metallic)),
-                                                ao(std::move(other.ao)),
-                                                albedoColor(other.albedoColor),
-                                                emissiveColor(other.emissiveColor),
-                                                roughnessValue(other.roughnessValue),
-                                                metallicValue(other.metallicValue),
-                                                aoValue(other.aoValue)
+Material::~Material() {}
+
+AutoRelease<Material> &loadMaterial(const char *name)
 {
+    auto it = _materials.find(name);
+    if (it != _materials.end())
+		return it->second;
+
+    AutoRelease<Material> &material = _materials[name];
+    material = new Material();
+
+    material->load(name);
+
+    return material;
+}
+
+void unloadMaterials()
+{
+	_materials.clear();
 }

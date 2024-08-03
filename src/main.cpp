@@ -7,6 +7,7 @@
 #include "terrain.h"
 #include "bloom.h"
 #include "shader.h"
+#include "generator.h"
 
 #include <imgui.h>
 
@@ -27,13 +28,21 @@ static constexpr float kSunAltitude = 25.0f;
 static constexpr float kSunAzimuth = 15.0f;
 static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
 static constexpr float kSunIntensity = 8.0f;
-static constexpr float kSunTightness = 1000.0f;
+static constexpr float kSunTightness = 650.0f;
 static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
 static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
+static constexpr float kFogDensity = 0.01f;
+
+// Earth: 6.371e6m, 1.2e5m
+// Mars: 3.3895e6m, 1e5m
+// Moon: 1.7374e6m, 1e2m
+
+static constexpr float kPlanetRadius = 6.371e6f;
+static constexpr float kAtmosphereRadius = kPlanetRadius + 1.2e5f;
 
 static constexpr int kTerrainSize = 4096;
 
-static Terrain *terrain;
+//static Terrain *terrain;
 
 static void debugWindow();
 static void initTerrainMaterials();
@@ -43,13 +52,13 @@ int main(int argc, char *argv[])
 {
     initAll(argc, argv);
 
-    terrain = new Terrain();
-    terrain->load("assets/terrain", 20);
+    //terrain = new Terrain();
+    //terrain->load("assets/terrain", 20);
 
-    Vector3 terrainScale = Vector3(kTerrainSize / terrain->width(), 1.0f, kTerrainSize / terrain->height());
-    terrain->setScale(terrainScale);
+    //Vector3 terrainScale = Vector3(kTerrainSize / terrain->width(), 1.0f, kTerrainSize / terrain->height());
+    //terrain->setScale(terrainScale);
 
-    addTerrain(terrain);
+    //addTerrain(terrain);
 
     initTerrainMaterials();
 
@@ -159,7 +168,7 @@ int main(int argc, char *argv[])
         endFrame();
     }
 
-    terrain->release();
+    //terrain->release();
 
     quitAll();
     return 0;
@@ -180,10 +189,14 @@ static void debugWindow()
     static float sunTightness = kSunTightness;
     static Vector3 horizonColor = kHorizonColor;
     static Vector3 zenithColor = kZenithColor;
+    static float fogDensity = kFogDensity;
+    static float planetRadius = kPlanetRadius;
+    static float atmosphereRadius = kAtmosphereRadius;
 
     static float exposure = 1.0f;
     static float bloomStrength = 0.2f;
     static float gamma = 2.2f;
+    static bool fxaa = true;
 
     Skybox *skybox = getSkybox();
 
@@ -240,7 +253,7 @@ static void debugWindow()
             ImGui::SeparatorText("Debug");
 
             ImGui::SliderInt("Buffer", &visualizeMode, VISUALIZE_NONE, VISUALIZE_COMPOSITOR);
-            ImGui::SliderInt("Compositor", &compositor, COMPOSITOR1, COMPOSITOR_COUNT - 2);
+            ImGui::SliderInt("Compositor", &compositor, COMPOSITOR1, COMPOSITOR_COUNT - 1);
 
             ImGui::Checkbox("Wireframe", &wireframe);
 
@@ -270,11 +283,30 @@ static void debugWindow()
 
             ImGui::PopID();
 
+            ImGui::PushID("Fog");
+            ImGui::SeparatorText("Fog");
+
+            ImGui::SliderFloat("Density", &fogDensity, 0.0f, 1.0f);
+
+            ImGui::PopID();
+
+            ImGui::PushID("Planet");
+
+            ImGui::SeparatorText("Planet");
+
+            ImGui::InputFloat("Radius", &planetRadius, 0.0f, 0.0f, "%.0f m");
+            ImGui::InputFloat("Atmosphere Radius", &atmosphereRadius, 0.0f, 0.0f, "%.0f m");
+
+            ImGui::PopID();
+
             ImGui::EndTabItem();
         }
 
         if (ImGui::BeginTabItem("Postprocess"))
         {
+            ImGui::SeparatorText("Antialiasing");
+            ImGui::Checkbox("FXAA", &fxaa);
+
             ImGui::SeparatorText("Tonemapping");
             ImGui::SliderFloat("Exposure", &exposure, 0.0f, 10.0f);
             ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 1.0f);
@@ -303,26 +335,30 @@ static void debugWindow()
     skybox->setSunTightness(sunTightness);
     skybox->setHorizonColor(horizonColor);
     skybox->setZenithColor(zenithColor);
+    skybox->setFogDensity(fogDensity);
+    skybox->setPlanetRadius(planetRadius);
+    skybox->setAtmosphereRadius(atmosphereRadius);
 
     setExposure(exposure);
     setGamma(gamma);
     setBloomStrength(bloomStrength);
+    setFXAAEnabled(fxaa);
 }
 
 static void initTerrainMaterials()
 {
-    Material *materials = terrain->getMaterials();
-    Material &dirt = materials[TERRAIN_DIRT_INDEX];
-    Material &grass = materials[TERRAIN_GRASS_INDEX];
-    Material &snow = materials[TERRAIN_SNOW_INDEX];
-    Material &rock = materials[TERRAIN_ROCK_INDEX];
-    Material &sand = materials[TERRAIN_SAND_INDEX];
+    TerrainMaterials &materials = getTerrainGenerator()->getMaterials();
+    auto &dirt = materials[TERRAIN_DIRT_INDEX];
+    auto &grass = materials[TERRAIN_GRASS_INDEX];
+    auto &snow = materials[TERRAIN_SNOW_INDEX];
+    auto &rock = materials[TERRAIN_ROCK_INDEX];
+    auto &sand = materials[TERRAIN_SAND_INDEX];
 
-    dirt.load("assets/rocky_dirt1");
-    grass.load("assets/forest-floor");
-    snow.load("assets/snowdrift1");
-    rock.load("assets/jagged-rocky-ground1");
-    sand.load("assets/wavy-sand");
+    dirt = loadMaterial("assets/rocky_dirt1");
+    grass = loadMaterial("assets/forest-floor");
+    snow = loadMaterial("assets/snowdrift1");
+    rock = loadMaterial("assets/jagged-rocky-ground1");
+    sand = loadMaterial("assets/wavy-sand");
 }
 
 static void initWater()
@@ -330,8 +366,8 @@ static void initWater()
     Terrain *water = getWater();
     water->load(kTerrainSize, kTerrainSize, 10);
 
-    Material *material = water->getMaterial();
-    material->normal.load("assets/water.jpg", COLOR_SPACE_LINEAR);
+    auto &material = water->getMaterial();
+    material->normal = loadTexture2D("assets/water.jpg", COLOR_SPACE_LINEAR);
 
     water->setEnabled(true);
 }

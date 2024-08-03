@@ -3,8 +3,8 @@
 #include <cstdint>
 
 #include <glad/glad.h>
-
 #include <mutil/mutil.h>
+#include <half.hpp>
 
 #include "material.h"
 
@@ -25,6 +25,8 @@ struct TerrainVertex
     Vector2 texCoords;
 };
 
+using TerrainMaterials = MaterialArray<NUM_TERRAIN_MATERIALS>;
+
 class Terrain
 {
 public:
@@ -33,6 +35,7 @@ public:
 
     void load(float width, float height, uint32_t resolution);
     void load(const char *folder, uint32_t resolution);
+    void load(int width, int height, const half_float::half *heights, const half_float::half *normals, uint32_t resolution);
 
     void retain();
     void release();
@@ -43,8 +46,10 @@ public:
     constexpr bool enabled() const { return _enabled; }
     constexpr void setEnabled(bool enabled) { _enabled = enabled; }
 
-    constexpr Material *getMaterials() { return _materials; }
-    constexpr Material *getMaterial() { return _materials; }
+    constexpr TerrainMaterials &getMaterials() { return _materials; }
+    constexpr AutoRelease<Material> &getMaterial() { return _materials[0]; }
+
+    constexpr void setMaterials(const TerrainMaterials &materials) { _materials = materials; }
 
     constexpr bool usesMaterials() const { return _useMaterials; }
     constexpr void setUseMaterials(bool use) { _useMaterials = use; }
@@ -92,7 +97,7 @@ private:
     bool _hasHeightMap;
     GLuint _heightMap, _normalMap;
 
-    Material _materials[NUM_TERRAIN_MATERIALS];
+    TerrainMaterials _materials;
     bool _useMaterials;
 
     Vector3 _position;

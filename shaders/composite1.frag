@@ -132,21 +132,17 @@ void main()
 
     /* Ambient */
     float kD = 1.0 - material.metallic;
-    vec3 irradiance = sampleAtmosphere(N);
+    vec3 sunColor; // ignored
+    vec3 irradiance = sampleSky(N);
     vec3 diffuse = irradiance * albedo;
     
-    vec3 V = normalize(uCamera.position - fragpos);
-    vec3 reflection = sampleAtmosphere(reflect(V, N));
+    //vec3 V = normalize(uCamera.position - fragpos);
+    //vec3 reflection = sampleAtmosphere(reflect(V, N));
 
     vec3 ambient = kD * diffuse * material.ao;
 
     /* Final color */
     vec3 color = lighting + ambient;
-
-    /* Fog */
-    float dist = length(fragpos - uCamera.position);
-    float fog = 1.0 - exp(-dist * kFogDensity);
-    color = mix(color, sampleAtmosphere(V), fog);
 
     Color0 = vec4(color, 1.0);
 

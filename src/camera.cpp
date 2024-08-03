@@ -11,7 +11,8 @@ struct CameraGPU
 
     float near;
     float far;
-    float _pad2[3];
+    float aspect;
+    float _pad2[2];
 
     Vector3 front;
     float _pad3;
@@ -92,8 +93,10 @@ void Camera::upload() const
 
     cam->position = _position;
     cam->direction = _front;
+    cam->up = _up;
     cam->near = _near;
     cam->far = _far;
+    cam->aspect = _aspect;
 
     cam->front = _front;
     cam->right = _right;

@@ -10,15 +10,21 @@ in VS_OUT
     vec3 FragPos;
 } fs_in;
 
+uniform vec2 uResolution;
+
 void main()
 {
     vec3 V = normalize(vec3(uCamera.invView * vec4(normalize(fs_in.FragPos), 0.0)));
     
-    /* Sky color */
-    vec3 color = sampleAtmosphere(V);
+    // Sky color
+   // vec3 color = sampleAtmosphere(V);
 
-    /* Draw sun */
-    color += sampleSun(V);
+    //vec3 eye = vec3(0.0, uCamera.position.y + uAtmosphere.planetRadius, 0.0);
+    //vec3 sunColor;
+    vec3 color = sampleSky(V);// atmosphere(V, eye, sunColor);
+
+    // Draw sun
+    //color += sunColor;
 
     MaterialInfo material;
     material.roughness = 0.0;
@@ -27,10 +33,15 @@ void main()
     material.lit = false;
     material.reflective = false;
 
+    // Calculate real view-space position by fixing depth
+    vec4 ndc = vec4(((gl_FragCoord.xy / uResolution) - 0.5) * 2, 1.0, 1.0);
+    vec4 viewPos = uCamera.invProj * ndc;
+    viewPos.xyz /= viewPos.w;
+
     Albedo = vec4(0.0, 0.0, 0.0, 1.0);
     Emissive = vec4(color, 1.0);
-    PositionOut = vec4(fs_in.FragPos, 1.0);
-    DepthOut = vec4(gl_FragCoord.zzz, 1.0);
+    PositionOut = vec4(viewPos.xyz, 1.0);
+    DepthOut = vec4(1.0);
     NormalOut = vec4(0.0, 0.0, 0.0, 1.0);
     MaterialOut = encodeMaterial(material);
 }

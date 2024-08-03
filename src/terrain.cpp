@@ -5,7 +5,6 @@
 #include <string>
 
 #include <stb_image.h>
-#include <half.hpp>
 
 #include "engine.h"
 #include "shader.h"
@@ -26,10 +25,10 @@ void Terrain::render(Shader *shader) const
     if (_useMaterials)
     {
         for (int i = 0; i < NUM_TERRAIN_MATERIALS; i++)
-            shader->setMaterial(i, _materials[i]);
+            shader->setMaterial(i, *_materials[i]);
     }
     else
-        shader->setMaterial(_materials[0]);
+        shader->setMaterial(*_materials[0]);
 
     shader->setFloat("uTime", getTime());
 
@@ -145,36 +144,21 @@ void Terrain::load(const char *folder, uint32_t resolution)
 
     fclose(file);
 
-    /* Setup main terrain */
-    load(hmWidth, hmHeight, resolution);
-
     /* Load heightmap */
     file = fopen(heightmapFile.c_str(), "rb");
     if (!file)
 		fatal("Terrain::load: failed to open heightmap.raw");
 
     size_t size = hmWidth * hmHeight * sizeof(half_float::half);
-    half_float::half *data = (half_float::half *)malloc(size);
-    if (!data)
+    half_float::half *heightData = (half_float::half *)malloc(size);
+    if (!heightData)
 		fatal("Terrain::load: failed to allocate heightmap data");
 
-    size_t nRead = fread(data, 1, size, file);
+    size_t nRead = fread(heightData, 1, size, file);
     if (nRead != size)
 		fatal("Terrain::load: failed to read heightmap data");
 
     fclose(file);
-
-    /* Create heightmap texture */
-    glGenTextures(1, &_heightMap);
-    glBindTexture(GL_TEXTURE_2D, _heightMap);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, hmWidth, hmHeight, 0, GL_RED, GL_HALF_FLOAT, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    free(data);
 
     /* Load normalmap */
     file = fopen(normalFile.c_str(), "rb");
@@ -182,27 +166,48 @@ void Terrain::load(const char *folder, uint32_t resolution)
         fatal("Terrain::load: failed to open normal.raw");
 
     size = hmWidth * hmHeight * 3 * sizeof(half_float::half);
-    data = (half_float::half *)malloc(size);
-    if (!data)
+    half_float::half *normalData = (half_float::half *)malloc(size);
+    if (!normalData)
 		fatal("Terrain::load: failed to allocate normalmap data");
 
-    nRead = fread(data, 1, size, file);
+    nRead = fread(normalData, 1, size, file);
     if (nRead != size)
         fatal("Terrain::load: failed to read normalmap data");
 
     fclose(file);
 
-    /* Create normalmap texture */
-    glGenTextures(1, &_normalMap);
-    glBindTexture(GL_TEXTURE_2D, _normalMap);
+    /* Load */
+    load(hmWidth, hmHeight, heightData, normalData, resolution);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, hmWidth, hmHeight, 0, GL_RGB, GL_HALF_FLOAT, data);
+    /* Cleanup */
+    free(normalData);
+    free(heightData);
+}
+
+void Terrain::load(int width, int height, const half_float::half *heights, const half_float::half *normals, uint32_t resolution)
+{
+    /* Setup main terrain */
+    load((float)width, (float)height, resolution);
+
+    /* Create heightmap texture */
+    glGenTextures(1, &_heightMap);
+    glBindTexture(GL_TEXTURE_2D, _heightMap);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, width, height, 0, GL_RED, GL_HALF_FLOAT, heights);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    free(data);
+    /* Create normalmap texture */
+    glGenTextures(1, &_normalMap);
+    glBindTexture(GL_TEXTURE_2D, _normalMap);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_HALF_FLOAT, normals);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     _hasHeightMap = true;
 }
@@ -228,6 +233,7 @@ Terrain::Terrain() : _vao(0), _vbo(0),
                      _useMaterials(true),
                      _dirty(true)
 {
+    _materials[0] = new Material(); // Default material
 }
 
 Terrain::~Terrain()

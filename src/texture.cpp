@@ -3,8 +3,12 @@
 #include <cstdio>
 #include <cstdint>
 #include <cmath>
+#include <unordered_map>
+#include <string>
 
 #include <stb_image.h>
+
+static std::unordered_map<std::string, AutoRelease<Texture2D>> _textures;
 
 void Texture2D::load(GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels)
 {
@@ -110,4 +114,23 @@ Texture2D::~Texture2D()
 {
     if (_texture)
         glDeleteTextures(1, &_texture);
+}
+
+AutoRelease<Texture2D> &loadTexture2D(const char *filename, ColorSpace colorSpace)
+{
+    auto it = _textures.find(filename);
+    if (it != _textures.end())
+		return it->second;
+
+    AutoRelease<Texture2D> &texture = _textures[filename];
+    texture = new Texture2D();
+
+    texture->load(filename, colorSpace);
+
+    return texture;
+}
+
+void unloadTextures()
+{
+    _textures.clear();
 }

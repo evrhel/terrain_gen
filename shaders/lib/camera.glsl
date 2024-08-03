@@ -5,6 +5,7 @@ layout (std140) uniform Camera
 
     float near;
     float far;
+    float aspect;
 
     vec3 front;
     vec3 right;
