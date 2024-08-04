@@ -257,7 +257,7 @@ void main()
 
     vec4 viewDir = normalize(uCamera.invView * vec4(R, 0.0));
     vec3 sunColor;
-    vec3 skyColor = sampleSky(viewDir.xyz);// + sampleSun(viewDir.xyz);
+    vec3 skyColor = sampleSky(viewDir.xyz) + sampleSun(viewDir.xyz);
     //skyColor += sunColor;
 
     vec4 reflection = raytrace(fragpos.xyz, R);

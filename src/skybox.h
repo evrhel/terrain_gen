@@ -102,6 +102,30 @@ public:
         _dirty = true;
     }
 
+    constexpr float Hr() const { return _Hr; }
+
+    constexpr void setHr(float Hr)
+    {
+		_Hr = Hr;
+		_dirty = true;
+	}
+
+    constexpr float Hm() const { return _Hm; }
+
+    constexpr void setHm(float Hm)
+    {
+        _Hm = Hm;
+        _dirty = true;
+    }
+
+    constexpr float miePhase() const { return _miePhase; }
+
+    constexpr void setMiePhase(float miePhase)
+    {
+        _miePhase = miePhase;
+        _dirty = true;
+    }
+
     constexpr const Vector3 &sunDirection() const { return _sunDirection; }
     constexpr const Vector3 &sunPosition() const { return _sunPosition; }
 
@@ -130,6 +154,7 @@ private:
     /* Atmosphere */
     float _planetRadius;
     float _atmosphereRadius;
+    float _Hr, _Hm, _miePhase;
 
     bool _dirty;
     GLuint _ubo;

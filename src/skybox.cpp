@@ -35,6 +35,9 @@ struct SkyboxGPU
 
     float planetRadius;
     float atmosphereRadius;
+    float Hr;
+    float Hm;
+    float g;
 };
 
 static const Vector3 kSkyboxVertices[] = {
@@ -303,6 +306,7 @@ Skybox::Skybox() :
     _horizonColor(0.1f), _zenithColor(0.0f),
     _fogDensity(0.1f),
     _planetRadius(6371e3f), _atmosphereRadius(6471e3f),
+    _Hr(7994.0f), _Hm(1200.0f), _miePhase(0.76f),
     _dirty(true),
     _ubo(0),
     _cubemapFBO(0), _cubemap(0),
@@ -352,6 +356,9 @@ void Skybox::upload() const
     sb->fogDensity = _fogDensity;
     sb->planetRadius = _planetRadius;
     sb->atmosphereRadius = _atmosphereRadius;
+    sb->Hr = _Hr;
+    sb->Hm = _Hm;
+    sb->g = _miePhase;
 
     glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SkyboxGPU), buf);

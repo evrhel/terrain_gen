@@ -15,6 +15,9 @@ layout (std140) uniform Atmosphere
 
     float planetRadius;
     float atmosphereRadius;
+    float Hr; // Thickness of the atmosphere (Rayleigh scattering)
+    float Hm; // Thickness of the atmosphere (Mie scattering)
+    float g; // Mie scattering phase function
 } uAtmosphere;
 
 uniform samplerCube uSkybox;
@@ -28,15 +31,15 @@ uniform samplerCube uIrradiance;
 
 vec3 sampleSun(vec3 direction)
 {
-    /*float intensity = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
+    float intensity = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
     intensity = pow(intensity, uAtmosphere.sunTightness);
-    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * intensity;*/
+    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * intensity;
 
-    float angle = 1.0 - max(dot(direction, -uAtmosphere.sunDirection), 0.0);
+    /*float angle = 1.0 - max(dot(direction, -uAtmosphere.sunDirection), 0.0);
     angle *= uAtmosphere.sunTightness;
 
     float sun = exp(-angle * angle * angle);
-    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * sun;
+    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * sun;*/
 }
 
 float calcAirDensity(float height)

@@ -39,6 +39,9 @@ static constexpr float kFogDensity = 0.01f;
 
 static constexpr float kPlanetRadius = 6.371e6f;
 static constexpr float kAtmosphereRadius = kPlanetRadius + 1.2e5f;
+static constexpr float kHr = 7994.0f;
+static constexpr float kHm = 1200.0f;
+static constexpr float kMiePhase = 0.76f;
 
 static constexpr int kTerrainSize = 4096;
 
@@ -192,6 +195,9 @@ static void debugWindow()
     static float fogDensity = kFogDensity;
     static float planetRadius = kPlanetRadius;
     static float atmosphereRadius = kAtmosphereRadius;
+    static float Hr = kHr;
+    static float Hm = kHm;
+    static float miePhase = kMiePhase;
 
     static float exposure = 1.0f;
     static float bloomStrength = 0.2f;
@@ -294,8 +300,20 @@ static void debugWindow()
 
             ImGui::SeparatorText("Planet");
 
-            ImGui::InputFloat("Radius", &planetRadius, 0.0f, 0.0f, "%.0f m");
+            ImGui::InputFloat("Planet Radius", &planetRadius, 0.0f, 0.0f, "%.0f m");
+            ImGui::SetItemTooltip("Radius of the planet in meters.");
+
             ImGui::InputFloat("Atmosphere Radius", &atmosphereRadius, 0.0f, 0.0f, "%.0f m");
+            ImGui::SetItemTooltip("Radius of the atmosphere in meters.");
+
+            ImGui::SliderFloat("Hr", &Hr, 0.0f, 10000.0f);
+            ImGui::SetItemTooltip("Rayleigh scale height in meters.");
+
+            ImGui::SliderFloat("Hm", &Hm, 0.0f, 10000.0f);
+            ImGui::SetItemTooltip("Mie scale height in meters.");
+
+            ImGui::SliderFloat("G", &miePhase, -1.0f, 1.0f);
+            ImGui::SetItemTooltip("Mie phase function.");
 
             ImGui::PopID();
 
@@ -338,6 +356,9 @@ static void debugWindow()
     skybox->setFogDensity(fogDensity);
     skybox->setPlanetRadius(planetRadius);
     skybox->setAtmosphereRadius(atmosphereRadius);
+    skybox->setHr(Hr);
+    skybox->setHm(Hm);
+    skybox->setMiePhase(miePhase);
 
     setExposure(exposure);
     setGamma(gamma);

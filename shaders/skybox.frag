@@ -17,14 +17,10 @@ void main()
     vec3 V = normalize(vec3(uCamera.invView * vec4(normalize(fs_in.FragPos), 0.0)));
     
     // Sky color
-   // vec3 color = sampleAtmosphere(V);
-
-    //vec3 eye = vec3(0.0, uCamera.position.y + uAtmosphere.planetRadius, 0.0);
-    //vec3 sunColor;
-    vec3 color = sampleSky(V);// atmosphere(V, eye, sunColor);
+    vec3 color = sampleSky(V);
 
     // Draw sun
-    //color += sunColor;
+    color += sampleSun(V);
 
     MaterialInfo material;
     material.roughness = 0.0;
