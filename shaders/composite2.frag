@@ -196,6 +196,46 @@ vec3 renderClouds(in vec3 viewPos, in vec3 color, const int cloudIT)
     return color;
 }
 
+vec3 godrays(vec3 baseColor)
+{
+    const float kStrength = 0.5;
+    const int kSamples = 100;
+    const float kDensity = 0.9;
+    const float kWeight = 0.01;
+    const float kDecay = 0.95;
+
+    vec3 sunPosition = uAtmosphere.sunPosition;
+    if (sunPosition.x < 0.0 || sunPosition.x > 1.0 || sunPosition.y < 0.0 || sunPosition.y > 1.0 || sunPosition.z <= 0.0)
+        return baseColor;
+
+    vec2 texCoord = fs_in.TexCoords;
+
+    vec2 deltaTexCoord = texCoord - sunPosition.xy;
+    deltaTexCoord *= 1.0 / float(kSamples) * kDensity;
+
+    float accum = 0.0;
+    float decay = 1.0;
+
+    for (int i = 0; i < kSamples; i++)
+    {
+        texCoord -= deltaTexCoord;
+        
+        float vis = texture(uGbuffer.depth, texCoord).r;
+        vis = vis >= 1.0 ? 1.0 : 0.0;
+
+        accum += vis * decay * kWeight;
+
+        decay *= kDecay;
+    }
+
+    accum *= edgefade(sunPosition.xy, 0.1);
+    accum = clamp(accum * kStrength, 0.0, 1.0);
+
+    vec3 color = uAtmosphere.sunIntensity * uAtmosphere.sunColor;
+
+    return mix(baseColor, color, accum);
+}
+
 void main()
 {
     /* Get base color */
@@ -218,6 +258,8 @@ void main()
     /* Volumetric clouds */
     baseColor = renderClouds(fragpos, baseColor, 8);
     
+    /* Apply godrays */
+    baseColor = godrays(baseColor);
 
     /* Get material */
     MaterialInfo material;

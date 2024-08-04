@@ -105,7 +105,7 @@ vec3 calcAtmosphere(vec3 R, vec3 eye)
         t += segLength;
     }
 
-    return (/*sumR * kBetaR * phaseR + */sumM * kBetaM * phaseM) * uAtmosphere.sunIntensity * uAtmosphere.sunColor;
+    return (sumR * kBetaR * phaseR + sumM * kBetaM * phaseM) * uAtmosphere.sunIntensity * uAtmosphere.sunColor;
 }
 
 void main()

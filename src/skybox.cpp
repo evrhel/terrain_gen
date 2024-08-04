@@ -273,21 +273,16 @@ bool Skybox::update(const Camera *camera)
     _sunDirection = mutil::rotatevector(q, kWorldFront);
 
     /* Compute sun position */
-    _sunPositionWorld = -_sunDirection * _atmosphereRadius * 1.1f; // Sun position in world space
+    _sunPositionWorld = -_sunDirection * _atmosphereRadius * 1.1f + camera->position(); // Sun position in world space
 
     /* Compute screen-space sun position */
-    //Vector3 sunViewDir = Matrix3(camera->view()) * _sunDirection; // Sun direction in view space
-    //Vector3 sunPosView = sunViewDir * (camera->far() - camera->near()); // Sun position in view space
-
-    //Vector4 sunPosNDC = camera->proj() * Vector4(sunPosView, 1.0f);
-
-    //_sunPosition = Vector3(sunPosNDC.x / sunPosNDC.w, sunPosNDC.y / sunPosNDC.w, 1.0f);
-    //_sunPosition = (_sunPosition + Vector3(1.0f)) * 0.5f;
 
     Vector4 sunPosView = camera->view() * Vector4(_sunPositionWorld, 1.0f);
     Vector4 sunPosNDC = camera->proj() * sunPosView;
 
-    _sunPosition = Vector3(sunPosNDC.x / sunPosNDC.w, sunPosNDC.y / sunPosNDC.w, 1.0f);
+    float z = sunPosNDC.w > 0.0 ? 1.0f : -1.0f; // Check if sun is behind camera
+
+    _sunPosition = Vector3(sunPosNDC.x / sunPosNDC.w, sunPosNDC.y / sunPosNDC.w, z);
     _sunPosition = (_sunPosition + Vector3(1.0f)) * 0.5f;
 
     upload();

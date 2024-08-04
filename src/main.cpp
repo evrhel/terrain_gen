@@ -29,8 +29,6 @@ static constexpr float kSunAzimuth = 15.0f;
 static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
 static constexpr float kSunIntensity = 8.0f;
 static constexpr float kSunTightness = 650.0f;
-static constexpr Vector3 kHorizonColor = colorRGB(135, 206, 235);
-static constexpr Vector3 kZenithColor = colorRGB(70, 130, 180);
 static constexpr float kFogDensity = 0.01f;
 
 // Earth: 6.371e6m, 1.2e5m
@@ -190,8 +188,6 @@ static void debugWindow()
     static Vector3 sunColor = kSunColor;
     static float sunIntensity = kSunIntensity;
     static float sunTightness = kSunTightness;
-    static Vector3 horizonColor = kHorizonColor;
-    static Vector3 zenithColor = kZenithColor;
     static float fogDensity = kFogDensity;
     static float planetRadius = kPlanetRadius;
     static float atmosphereRadius = kAtmosphereRadius;
@@ -282,17 +278,15 @@ static void debugWindow()
 
             ImGui::PushID("Sky");
             ImGui::SeparatorText("Sky");
-
-            ImGui::ColorEdit3("Horizon Color", (float *)&horizonColor);
-            ImGui::ColorEdit3("Zenith Color", (float *)&zenithColor);
+            
             ImGui::SliderFloat("Sun Tightness", &sunTightness, 0.0f, 1500.0f);
 
             ImGui::PopID();
 
-            ImGui::PushID("Fog");
-            ImGui::SeparatorText("Fog");
+            ImGui::PushID("Volumetrics");
+            ImGui::SeparatorText("Volumetrics");
 
-            ImGui::SliderFloat("Density", &fogDensity, 0.0f, 1.0f);
+            ImGui::SliderFloat("Fog Density", &fogDensity, 0.0f, 1.0f);
 
             ImGui::PopID();
 
@@ -306,13 +300,13 @@ static void debugWindow()
             ImGui::InputFloat("Atmosphere Radius", &atmosphereRadius, 0.0f, 0.0f, "%.0f m");
             ImGui::SetItemTooltip("Radius of the atmosphere in meters.");
 
-            ImGui::SliderFloat("Hr", &Hr, 0.0f, 10000.0f);
+            ImGui::SliderFloat("Rayleigh Scale Height", &Hr, 0.0f, 10000.0f);
             ImGui::SetItemTooltip("Rayleigh scale height in meters.");
 
-            ImGui::SliderFloat("Hm", &Hm, 0.0f, 10000.0f);
+            ImGui::SliderFloat("Mie Scale Height", &Hm, 0.0f, 10000.0f);
             ImGui::SetItemTooltip("Mie scale height in meters.");
 
-            ImGui::SliderFloat("G", &miePhase, -1.0f, 1.0f);
+            ImGui::SliderFloat("Mie Scattering Coefficient", &miePhase, -1.0f, 1.0f);
             ImGui::SetItemTooltip("Mie phase function.");
 
             ImGui::PopID();
@@ -351,8 +345,6 @@ static void debugWindow()
     skybox->setSunColor(sunColor);
     skybox->setSunIntensity(sunIntensity);
     skybox->setSunTightness(sunTightness);
-    skybox->setHorizonColor(horizonColor);
-    skybox->setZenithColor(zenithColor);
     skybox->setFogDensity(fogDensity);
     skybox->setPlanetRadius(planetRadius);
     skybox->setAtmosphereRadius(atmosphereRadius);
