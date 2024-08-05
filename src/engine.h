@@ -25,6 +25,7 @@ enum ShaderID
     SHADER_COMPOSITE1,
     SHADER_COMPOSITE2,
     SHADER_COMPOSITE3,
+    SHADER_COMPOSITE4,
     SHADER_FINAL,
 
     SHADER_GENERIC,
@@ -46,6 +47,7 @@ enum CompositorID
     COMPOSITOR1,
     COMPOSITOR2,
     COMPOSITOR3,
+    COMPOSITOR4,
 
     COMPOSITOR_COUNT
 };
@@ -60,6 +62,15 @@ enum VisualizeMode
     VISUALIZE_NORMAL,
     VISUALIZE_MATERIAL,
     VISUALIZE_COMPOSITOR
+};
+
+enum TonemapMode
+{
+    TONEMAP_LINEAR,
+    TONEMAP_REINHARD,
+    TONEMAP_ACES,
+    TONEMAP_UNCHARTED2_RGB,
+    TONEMAP_UNCHARTED2_LUM,
 };
 
 void initAll(int argc, char *argv[]);
@@ -127,5 +138,8 @@ void setVsync(bool enabled);
 
 bool getFXAAEnabled();
 void setFXAAEnabled(bool enabled);
+
+TonemapMode getTonemapMode();
+void setTonemapMode(TonemapMode mode);
 
 GLuint getNoise();

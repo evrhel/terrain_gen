@@ -238,6 +238,7 @@ static float _bloomStrength = 1.0f;
 static bool _vsync = true;
 
 static bool _fxaa = true;
+static TonemapMode _tonemapMode = TONEMAP_ACES;
 
 #define SIZE_EV 64
 
@@ -363,6 +364,7 @@ namespace
 #include <shaders/composite1.frag.h>
 #include <shaders/composite2.frag.h>
 #include <shaders/composite3.frag.h>
+#include <shaders/composite4.frag.h>
 #include <shaders/downsample.frag.h>
 #include <shaders/final.frag.h>
 #include <shaders/generic.frag.h>
@@ -398,6 +400,9 @@ static void loadShaders()
 
     Shader *composite3 = getShader(SHADER_COMPOSITE3);
     composite3->load("composite3", screen_vert_source, composite3_frag_source);
+
+    Shader *composite4 = getShader(SHADER_COMPOSITE4);
+    composite4->load("composite4", screen_vert_source, composite4_frag_source);
 
     Shader *final = getShader(SHADER_FINAL);
     final->load("final", screen_vert_source, final_frag_source);
@@ -454,7 +459,10 @@ static void loadCompositors(GLsizei width, GLsizei height)
     texture0.internalFormat = GL_R11F_G11F_B10F;
     texture0.format = GL_RGB;
     texture0.type = GL_FLOAT;
-    compositor2->load(outputs, 1);
+    texture1.internalFormat = GL_R11F_G11F_B10F;
+    texture1.format = GL_RGB;
+    texture1.type = GL_FLOAT;
+    compositor2->load(outputs, 2);
     _compositors[COMPOSITOR2] = compositor2;
 
     /* Compositor 3 */
@@ -464,6 +472,14 @@ static void loadCompositors(GLsizei width, GLsizei height)
     texture0.type = GL_FLOAT;
     compositor3->load(outputs, 1);
     _compositors[COMPOSITOR3] = compositor3;
+
+    /* Compositor 4 */
+    Compositor *compositor4 = new Compositor();
+    texture0.internalFormat = GL_R11F_G11F_B10F;
+    texture0.format = GL_RGB;
+    texture0.type = GL_FLOAT;
+    compositor4->load(outputs, 1);
+    _compositors[COMPOSITOR4] = compositor4;
 
     /* Final */
     _final = new Compositor();
@@ -823,7 +839,7 @@ void renderAll()
             Shader *s = getShader(shaderID);
             s->use();
 
-            if (shaderID == SHADER_COMPOSITE3)
+            if (shaderID == SHADER_COMPOSITE4)
                 s->setBool("uEnableFXAA", _fxaa);
 
             s->setBool("uWireframe", _wireframe);
@@ -863,6 +879,7 @@ void renderAll()
             s->setFloat("uGamma", _gamma);
             s->setFloat("uExposure", _exposure);
             s->setFloat("uBloomStrength", _bloomStrength);
+            s->setInt("uTonemapFunction", _tonemapMode);
 
             s->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
             s->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
@@ -1067,4 +1084,14 @@ void setFXAAEnabled(bool enabled)
 GLuint getNoise()
 {
     return _noiseTex;
+}
+
+TonemapMode getTonemapMode()
+{
+    return _tonemapMode;
+}
+
+void setTonemapMode(TonemapMode mode)
+{
+    _tonemapMode = mode;
 }

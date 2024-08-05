@@ -87,7 +87,7 @@ const float kMaxHeight = kCloudHeight + 200;
 const vec3 kCloudColor2 = vec3(0.5);
 const vec3 kCloudColor = vec3(1);
 
-float densityAtPos(in vec3 pos)
+float densityAtPos(vec3 pos)
 {
     pos /= 18.0;
     pos.xz *= 0.5;
@@ -106,7 +106,7 @@ float densityAtPos(in vec3 pos)
     return mix(xy1, xy2, f.y);
 }
 
-float cloudPlane(in vec3 pos)
+float cloudPlane(vec3 pos)
 {
     float center = kCloudHeight * 0.5 + kMaxHeight * 0.5;
     float difcenter = kMaxHeight - center;
@@ -124,7 +124,7 @@ float cloudPlane(in vec3 pos)
     return 1.0 - pow(0.4, max(noise / tot - 0.56 - mult * mult * 0.3, 0.0) * 2.2);
 }
 
-vec3 renderClouds(in vec3 viewPos, in vec3 color, const int cloudIT)
+vec3 renderClouds(vec3 viewPos, vec3 color, const int cloudIT, inout float occlusion)
 {
     float dither = fract(0.75487765 * gl_FragCoord.x + 0.56984026 * gl_FragCoord.y);
 
@@ -188,62 +188,28 @@ vec3 renderClouds(in vec3 viewPos, in vec3 color, const int cloudIT)
 
         vec3 cloudColor = mix(cloudBaseColor * 0.05, cloudIllumColor * 0.15, lightsourceVis);
         
-        color = mix(color, cloudColor, 1.0 - exp(-cloud * mult));
+        float amount = 1.0 - exp(-cloud * mult);
+        color = mix(color, cloudColor, amount);
+        occlusion -= amount;
 
         progress_view += dV_view;
     }
 
+    occlusion = clamp(occlusion, 0.0, 1.0);
     return color;
-}
-
-vec3 godrays(vec3 baseColor)
-{
-    const float kStrength = 0.5;
-    const int kSamples = 100;
-    const float kDensity = 0.9;
-    const float kWeight = 0.01;
-    const float kDecay = 0.95;
-
-    vec3 sunPosition = uAtmosphere.sunPosition;
-    if (sunPosition.x < 0.0 || sunPosition.x > 1.0 || sunPosition.y < 0.0 || sunPosition.y > 1.0 || sunPosition.z <= 0.0)
-        return baseColor;
-
-    vec2 texCoord = fs_in.TexCoords;
-
-    vec2 deltaTexCoord = texCoord - sunPosition.xy;
-    deltaTexCoord *= 1.0 / float(kSamples) * kDensity;
-
-    float accum = 0.0;
-    float decay = 1.0;
-
-    for (int i = 0; i < kSamples; i++)
-    {
-        texCoord -= deltaTexCoord;
-        
-        float vis = texture(uGbuffer.depth, texCoord).r;
-        vis = vis >= 1.0 ? 1.0 : 0.0;
-
-        accum += vis * decay * kWeight;
-
-        decay *= kDecay;
-    }
-
-    accum *= edgefade(sunPosition.xy, 0.1);
-    accum = clamp(accum * kStrength, 0.0, 1.0);
-
-    vec3 color = uAtmosphere.sunIntensity * uAtmosphere.sunColor;
-
-    return mix(baseColor, color, accum);
 }
 
 void main()
 {
+    float occlusion = texture(uGbuffer.depth, fs_in.TexCoords).r;
+    occlusion = occlusion < 1.0 ? 0.0 : 1.0;
+
     /* Get base color */
     vec3 baseColor = texture(uTexture0, fs_in.TexCoords).rgb;
     if (uWireframe)
     {
         Color0 = vec4(baseColor, 1.0);
-        Color1 = vec4(0.0);
+        Color1 = vec4(baseColor * occlusion, 1.0);
         Color2 = vec4(0.0);
         Color3 = vec4(0.0);
         return;
@@ -256,11 +222,8 @@ void main()
    // baseColor = mix(baseColor, vec3(1,0,0), fogF);
     
     /* Volumetric clouds */
-    baseColor = renderClouds(fragpos, baseColor, 8);
+    baseColor = renderClouds(fragpos, baseColor, 8, occlusion);
     
-    /* Apply godrays */
-    baseColor = godrays(baseColor);
-
     /* Get material */
     MaterialInfo material;
     decodeMaterial(texture(uGbuffer.material, fs_in.TexCoords), material);
@@ -268,7 +231,7 @@ void main()
     if (!material.reflective)
     {
         Color0 = vec4(baseColor, 1.0);
-        Color1 = vec4(0.0);
+        Color1 = vec4(baseColor * occlusion, 1.0);
         Color2 = vec4(0.0);
         Color3 = vec4(0.0);
         return;
@@ -279,7 +242,7 @@ void main()
     if (N == vec3(0.0))
     {
         Color0 = vec4(baseColor, 1.0);
-        Color1 = vec4(0.0);
+        Color1 = vec4(baseColor * occlusion, 1.0);
         Color2 = vec4(0.0);
         Color3 = vec4(0.0);
         return;
@@ -308,9 +271,9 @@ void main()
     vec3 color = mix(baseColor, reflection.rgb, fresnel);
 
     Color0 = vec4(color, 1.0);
+    Color1 = vec4(color * occlusion, 1.0);
 
     /* No other layers */
-    Color1 = vec4(0.0);
     Color2 = vec4(0.0);
     Color3 = vec4(0.0);
 }

@@ -20,7 +20,7 @@ void main()
     vec3 color = sampleSky(V);
 
     // Draw sun
-    color += sampleSun(V);
+    //color += sampleSun(V);
 
     MaterialInfo material;
     material.roughness = 0.0;

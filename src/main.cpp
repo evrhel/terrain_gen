@@ -199,6 +199,7 @@ static void debugWindow()
     static float bloomStrength = 0.2f;
     static float gamma = 2.2f;
     static bool fxaa = true;
+    static TonemapMode tonemap = TONEMAP_ACES;
 
     Skybox *skybox = getSkybox();
 
@@ -320,8 +321,34 @@ static void debugWindow()
             ImGui::Checkbox("FXAA", &fxaa);
 
             ImGui::SeparatorText("Tonemapping");
+
+            static const char *kTonemapNames[] = {
+				"Linear",
+				"Reinhard",
+				"ACES",
+                "Uncharted 2 (RGB)",
+                "Uncharted 2 (Luminance)"
+			};
+
+            if (ImGui::BeginCombo("Tonemap Function", kTonemapNames[tonemap]))
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    bool selected = tonemap == i;
+                    if (ImGui::Selectable(kTonemapNames[i], selected))
+                        tonemap = (TonemapMode)i;
+
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::EndCombo();
+            }
+
             ImGui::SliderFloat("Exposure", &exposure, 0.0f, 10.0f);
-            ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 1.0f);
+
+            ImGui::SeparatorText("Bloom");
+            ImGui::SliderFloat("Strength", &bloomStrength, 0.0f, 1.0f);
 
             ImGui::SeparatorText("Display");
             ImGui::SliderFloat("Gamma", &gamma, 0.1f, 10.0f);
@@ -356,6 +383,7 @@ static void debugWindow()
     setGamma(gamma);
     setBloomStrength(bloomStrength);
     setFXAAEnabled(fxaa);
+    setTonemapMode(tonemap);
 }
 
 static void initTerrainMaterials()
