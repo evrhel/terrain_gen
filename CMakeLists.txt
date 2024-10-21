@@ -12,6 +12,9 @@ endif()
 
 add_subdirectory(thirdparty/SDL)
 add_subdirectory(thirdparty/lysys)
+add_subdirectory(thirdparty/assimp)
+
+add_compile_definitions(__SSE4_1__)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -47,6 +50,7 @@ add_executable(terrain_gen ${SOURCES})
 
 target_link_libraries(terrain_gen PRIVATE SDL3::SDL3)
 target_link_libraries(terrain_gen PRIVATE liblysys)
+target_link_libraries(terrain_gen PRIVATE assimp)
 
 target_include_directories(terrain_gen PRIVATE ${SDL3_SOURCE_DIR}/include)
 target_include_directories(terrain_gen PRIVATE thirdparty/glad/include)

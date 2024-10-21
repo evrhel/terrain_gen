@@ -124,8 +124,8 @@ void main()
     N = normalize(vec3(uCamera.invView * vec4(N, 0.0)));
 
     /* Sample gbuffer */
-    vec3 fragpos = texture(uGbuffer.position, fs_in.TexCoords).rgb;
-    fragpos = nvec3(uCamera.invView * nvec4(fragpos));
+    vec3 fragposView = texture(uGbuffer.position, fs_in.TexCoords).rgb;
+    vec3 fragpos = nvec3(uCamera.invView * nvec4(fragposView));
 
     /* Lighting */
     vec3 lighting = calcSun(fragpos, N, material.metallic, material.roughness, albedo);
@@ -143,6 +143,10 @@ void main()
 
     /* Final color */
     vec3 color = lighting + ambient;
+
+    /* Fog */
+    float fogStrength = exp(-length(fragposView) * uAtmosphere.fogDensity);
+    color = mix(color, uAtmosphere.fogColor, 1.0 - fogStrength);
 
     Color0 = vec4(color, 1.0);
 

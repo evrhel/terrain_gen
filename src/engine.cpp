@@ -821,6 +821,7 @@ void renderAll()
 
     skyboxShader->setCubemap("uSkybox", _skybox->skybox(), SKYBOX_TEXTURE_UNIT);
     skyboxShader->setCubemap("uIrradiance", _skybox->irradiance(), IRRADIANCE_TEXTURE_UNIT);
+    skyboxShader->setTexture("uNoiseTex", _noiseTex, NOISE_TEXTURE_UNIT);
 
     glDepthFunc(GL_LEQUAL);
     _skybox->render(skyboxShader);

@@ -3,12 +3,18 @@
 @include "lib/atmosphere.glsl"
 @include "lib/camera.glsl"
 
+#define PI 3.141592
+#define iSteps 16
+#define jSteps 9
+
 layout (location = 0) out vec4 Color0;
 
 in GS_OUT
 {
     vec3 Position;
 } fs_in;
+
+uniform vec2 uResolution;
 
 // Ray-sphere intersection
 //
@@ -29,83 +35,90 @@ vec2 rsi(vec3 r0, vec3 rd, float sr)
     return vec2((-b - sqrtd) / (2.0 * a), (-b + sqrtd) / (2.0 * a));
 }
 
-// R: ray direction (world space)
-// eye: ray origin (world space)
-vec3 calcAtmosphere(vec3 R, vec3 eye)
+vec2 earthShadow(float y0, vec3 sunDir)
 {
-    const vec3 kBetaR = vec3(3.8e-6, 12.5e-6, 33.1e-6); // Rayleigh scattering coefficient
-    const vec3 kBetaM = vec3(21e-6); // Mie scattering coefficient
-    const int kNumSamples = 16;
-    const int kLightSamples = 8;
-    const float kPi = 3.14159265358979323846;
+    return vec2(0.0);
+}
 
-    vec2 p_atmo = rsi(eye, R, uAtmosphere.atmosphereRadius);
-    if (p_atmo.x > p_atmo.y || p_atmo.y < 0.0)
-        return vec3(0.0); // No intersection
+vec3 calcAtmosphere(vec3 V, vec3 eye)
+{
+    //const vec3 kRlh = vec3(5.8e-6, 13.5e-6, 33.1e-6); // For lambda = (680, 550, 440 nm)
+    //const vec3 kMie = //vec3(0.00002);
+    
+    const vec3 kRlh = vec3(5.8e-6, 13.0e-6, 22.4e-6);
+    const float kMie = 21e-6;
+    const float shRlh = 8e3;
+    const float shMie = 1.2e3;
+    const float g = 0.76;
+    const float gg = g * g;
 
-    vec3 sunDirection = -normalize(uAtmosphere.sunDirection);
+    vec3 pSun = -normalize(uAtmosphere.sunDirection);
+    vec3 r = normalize(V);
 
-    float tmin = max(p_atmo.x, 0.0);
-    float tmax = p_atmo.y;
+    vec3 r0 = eye;
 
-    float segLength = (tmax - tmin) / float(kNumSamples);
-    float t = tmin;
+    vec2 p = rsi(r0, r, uAtmosphere.atmosphereRadius);
 
-    vec3 sumR = vec3(0.0);
-    vec3 sumM = vec3(0.0);
-    float opticalDepthR = 0.0;
-    float opticalDepthM = 0.0;
+    if (p.x > p.y || p.y < 0)
+        return vec3(0.0);
 
-    float mu = dot(R, sunDirection);
-    float phaseR = 3.0 / (16.0 * kPi) * (1.0 + mu * mu);
-    float g = uAtmosphere.g;// 0.76;
-    float phaseM = 3.0 / (8.0 * kPi) * ((1.0 - g * g) * (1.0 + mu * mu)) / ((2.0 * g * g) * pow(1.0 + g * g - 2.0 * g * mu, 1.5));
+    p.y = min(p.y, rsi(r0, r, uAtmosphere.planetRadius).x);
 
-    for (int i = 0; i < kNumSamples; i++)
+    float iStepSize = (p.y - p.x) / float(iSteps);
+
+    float iTime = 0.0;
+
+    vec3 totalRlh = vec3(0.0);
+    vec3 totalMie = vec3(0.0);
+
+    float iOdRlh = 0.0;
+    float iOdMie = 0.0;
+
+    float mu = dot(r, pSun);
+    float mumu = mu * mu;
+    float pRlh = 3.0 / (16.0 * PI) * (1.0 + mumu);
+    float pMie = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
+
+    for (int i = 0; i < iSteps; i++)
     {
-        vec3 pos = eye + (t + segLength * 0.5) * R;
+        vec3 iPos = r0 + r * (iTime + iStepSize * 0.5);
 
-        float height = length(pos) - uAtmosphere.planetRadius;
+        float iHeight = length(iPos) - uAtmosphere.planetRadius;
 
-        // Optical depth
-        opticalDepthR += exp(-height / uAtmosphere.Hr) * segLength;
-        opticalDepthM += exp(-height / uAtmosphere.Hm) * segLength;
+        float odStepRlh = exp(-iHeight / shRlh) * iStepSize;
+        float odStepMie = exp(-iHeight / shMie) * iStepSize;
 
-        vec2 p = rsi(pos, sunDirection, uAtmosphere.atmosphereRadius);
-        float segLengthLight = p.y / float(kLightSamples);
-        float tLight = 0.0;
+        iOdRlh += odStepRlh;
+        iOdMie += odStepMie;
 
-        float opticalDepthLightR = 0.0;
-        float opticalDepthLightM = 0.0;
-        
-        int j;
-        for (j = 0; j < kLightSamples; j++)
+        float jStepSize = rsi(iPos, pSun, uAtmosphere.atmosphereRadius).y / float(jSteps);
+
+        float jTime = 0.0;
+
+        float jOdRlh = 0.0;
+        float jOdMie = 0.0;
+
+        for (int j = 0; j < jSteps; j++)
         {
-            vec3 posLight = pos + (tLight + segLengthLight * 0.5) * sunDirection;
-            float heightLight = length(posLight) - uAtmosphere.planetRadius;
+            vec3 jPos = iPos + pSun * (jTime + jStepSize * 0.5);
 
-            if (heightLight < 0.0)
-                break;
+            float jHeight = length(jPos) - uAtmosphere.planetRadius;
 
-            opticalDepthLightR += exp(-heightLight / uAtmosphere.Hr) * segLengthLight;
-            opticalDepthLightM += exp(-heightLight / uAtmosphere.Hm) * segLengthLight;
+            jOdRlh += exp(-jHeight / shRlh) * jStepSize;
+            jOdMie += exp(-jHeight / shMie) * jStepSize;
 
-            tLight += segLengthLight;
+            jTime += jStepSize;
         }
 
-        if (j == kLightSamples)
-        {
-            vec3 tau = kBetaR * (opticalDepthR + opticalDepthLightR) + kBetaM * 1.1 * (opticalDepthM + opticalDepthLightM);
-            vec3 attn = exp(-tau);
+        vec3 attn = exp(-(kMie * (iOdMie + iOdMie) + kRlh * (iOdRlh + jOdRlh)));
 
-            sumR += attn * uAtmosphere.Hr;
-            sumM += attn * uAtmosphere.Hm;
-        }
+        totalRlh += odStepRlh * attn;
+        totalMie += odStepMie * attn;
 
-        t += segLength;
+        iTime + iStepSize;
     }
 
-    return (sumR * kBetaR * phaseR + sumM * kBetaM * phaseM) * uAtmosphere.sunIntensity * uAtmosphere.sunColor;
+    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
 }
 
 void main()

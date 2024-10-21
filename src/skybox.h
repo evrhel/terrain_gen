@@ -40,11 +40,11 @@ public:
 
     constexpr const Vector3 &sunColor() const { return _sunColor; }
 
-    constexpr void setSunColor(const Vector3 &color)
+   /* constexpr void setSunColor(const Vector3 &color)
     {
         _sunColor = color;
         _dirty = true;
-    }
+    }*/
 
     constexpr float sunIntensity() const { return _sunIntensity; }
 
@@ -86,6 +86,8 @@ public:
         _dirty = true;
     }
 
+    constexpr const Vector3 &fogColor() const { return _fogColor; }
+
     constexpr float planetRadius() const { return _planetRadius; }
 
     constexpr void setPlanetRadius(float radius)
@@ -126,6 +128,24 @@ public:
         _dirty = true;
     }
 
+    constexpr float sunTemperature() const { return _sunTemperature; }
+
+    constexpr void setSunTemperature(float temperature)
+    {
+		_sunTemperature = temperature;
+		_dirty = true;
+	}
+
+    constexpr const Vector3 &sunBlackbody() const { return _sunBlackbody; }
+
+    constexpr const Vector3 &sunColorMask() const { return _sunColorMask; }
+
+    constexpr void setSunColorMask(const Vector3 &mask)
+    {
+		_sunColorMask = mask;
+		_dirty = true;
+	}
+
     constexpr const Vector3 &sunDirection() const { return _sunDirection; }
     constexpr const Vector3 &sunPosition() const { return _sunPosition; }
 
@@ -150,11 +170,16 @@ private:
 
     /* Fog */
     float _fogDensity;
+    Vector3 _fogColor;
 
     /* Atmosphere */
     float _planetRadius;
     float _atmosphereRadius;
     float _Hr, _Hm, _miePhase;
+
+    float _sunTemperature;
+    Vector3 _sunBlackbody;
+    Vector3 _sunColorMask;
 
     bool _dirty;
     GLuint _ubo;
@@ -171,6 +196,13 @@ private:
 
     GLuint _irradianceFBO;
     GLuint _irradiance; // Irradiance cubemap
+
+    GLuint _starbox; // Starbox cubemap
+
+    Vector3 atmosphere(const Vector3 &V, const Vector3 &eye) const;
+    void computeSunColor(const Camera *camera);
+
+    void genStarbox();
 
     void upload() const;
 };

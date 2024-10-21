@@ -26,10 +26,10 @@ static float far = 2048.0f;
 
 static constexpr float kSunAltitude = 25.0f;
 static constexpr float kSunAzimuth = 15.0f;
-static constexpr Vector3 kSunColor = Vector3(1.0f, 1.0f, 0.82f);
-static constexpr float kSunIntensity = 8.0f;
-static constexpr float kSunTightness = 650.0f;
-static constexpr float kFogDensity = 0.01f;
+static constexpr Vector3 kSunColor = Vector3(1.0f);//Vector3(1.0f, 1.0f, 0.82f);
+static constexpr float kSunIntensity = 50.0f;
+static constexpr float kSunTightness = 1250.0f;
+static constexpr float kFogDensity = 0.05f;
 
 // Earth: 6.371e6m, 1.2e5m
 // Mars: 3.3895e6m, 1e5m
@@ -40,6 +40,7 @@ static constexpr float kAtmosphereRadius = kPlanetRadius + 1.2e5f;
 static constexpr float kHr = 7994.0f;
 static constexpr float kHm = 1200.0f;
 static constexpr float kMiePhase = 0.76f;
+static constexpr float kSunTemperature = 5772.0f;
 
 static constexpr int kTerrainSize = 4096;
 
@@ -185,7 +186,7 @@ static void debugWindow()
 
     static float sunAltitude = kSunAltitude;
     static float sunAzimuth = kSunAzimuth;
-    static Vector3 sunColor = kSunColor;
+    static Vector3 sunColorMask = kSunColor;
     static float sunIntensity = kSunIntensity;
     static float sunTightness = kSunTightness;
     static float fogDensity = kFogDensity;
@@ -194,6 +195,7 @@ static void debugWindow()
     static float Hr = kHr;
     static float Hm = kHm;
     static float miePhase = kMiePhase;
+    static float sunTemperature = kSunTemperature;
 
     static float exposure = 1.0f;
     static float bloomStrength = 0.2f;
@@ -270,8 +272,22 @@ static void debugWindow()
 
             ImGui::SliderFloat("Altitude", &sunAltitude, 0.0f, 360.0f);
             ImGui::SliderFloat("Azimuth", &sunAzimuth, 0.0f, 360.0f);
-            ImGui::ColorEdit3("Color", (float *)&sunColor);
-            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 50.0f);
+
+            ImGui::SliderFloat("Sun Temperature", &sunTemperature, 1000.0f, 40000.0f);
+            ImGui::SetItemTooltip("Temperature of the sun in Kelvin.");
+
+            ImGui::ColorEdit3("Color Mask", (float *)&sunColorMask);
+            ImGui::SetItemTooltip("Color mask of the sun.");
+
+            ImGui::SliderFloat("Intensity", &sunIntensity, 0.0f, 100.0f);
+            ImGui::SetItemTooltip("Intensity of the sun.");
+
+
+            const Vector3 &sunBlackbody = skybox->sunBlackbody();
+            ImGui::ColorButton("Sun Blackbody Radition", ImVec4(sunBlackbody.x, sunBlackbody.y, sunBlackbody.z, 1.0f));
+
+            const Vector3 &sunColor = skybox->sunColor();
+            ImGui::ColorButton("Sun Color", ImVec4(sunColor.x, sunColor.y, sunColor.z, 1.0f));
 
             ImGui::InputFloat3("Direction", (float *)&skybox->sunDirection(), "%.3f", ImGuiInputTextFlags_ReadOnly);
 
@@ -288,6 +304,9 @@ static void debugWindow()
             ImGui::SeparatorText("Volumetrics");
 
             ImGui::SliderFloat("Fog Density", &fogDensity, 0.0f, 1.0f);
+
+            const Vector3 &fogColor = skybox->fogColor();
+            ImGui::ColorButton("Fog Color", ImVec4(fogColor.x, fogColor.y, fogColor.z, 1.0f));
 
             ImGui::PopID();
 
@@ -369,15 +388,16 @@ static void debugWindow()
 
     skybox->setSunAltitude(sunAltitude);
     skybox->setSunAzimuth(sunAzimuth);
-    skybox->setSunColor(sunColor);
     skybox->setSunIntensity(sunIntensity);
     skybox->setSunTightness(sunTightness);
-    skybox->setFogDensity(fogDensity);
+    skybox->setFogDensity(fogDensity / 5000.0f);
     skybox->setPlanetRadius(planetRadius);
     skybox->setAtmosphereRadius(atmosphereRadius);
     skybox->setHr(Hr);
     skybox->setHm(Hm);
     skybox->setMiePhase(miePhase);
+    skybox->setSunTemperature(sunTemperature);
+    skybox->setSunColorMask(sunColorMask);
 
     setExposure(exposure);
     setGamma(gamma);

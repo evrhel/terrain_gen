@@ -7,6 +7,8 @@
 #include <mutil/mutil.h>
 #include <lysys/lysys.hpp>
 
+#define NOISE_TEXTURE_UNIT 27
+
 using namespace mutil;
 
 class Mesh;

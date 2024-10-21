@@ -174,7 +174,7 @@ vec3 renderClouds(vec3 viewPos, vec3 color, const int cloudIT, inout float occlu
     float mult = length(dV_view) / 256.0;
 
     vec3 cloudBaseColor = sampleSky(vec3(0, 1, 0));
-    vec3 cloudIllumColor = sampleSky(V) + uAtmosphere.sunColor * uAtmosphere.sunIntensity;
+    vec3 cloudIllumColor = sampleSky(-uAtmosphere.sunDirection);// + uAtmosphere.sunColor * uAtmosphere.sunIntensity;
     
     /* Subsurface scattering */
     float intensity = max(dot(V, -uAtmosphere.sunDirection), 0.0);
@@ -188,9 +188,9 @@ vec3 renderClouds(vec3 viewPos, vec3 color, const int cloudIT, inout float occlu
 
         vec3 cloudColor = mix(cloudBaseColor * 0.05, cloudIllumColor * 0.15, lightsourceVis);
         
-        float amount = 1.0 - exp(-cloud * mult);
-        color = mix(color, cloudColor, amount);
-        occlusion -= amount;
+        float factor = 1.0 - exp(-cloud * mult);
+        color = mix(color, cloudColor, factor);
+        occlusion -= factor;
 
         progress_view += dV_view;
     }
@@ -199,10 +199,34 @@ vec3 renderClouds(vec3 viewPos, vec3 color, const int cloudIT, inout float occlu
     return color;
 }
 
+float getNoise(vec3 coord, float scale)
+{
+    vec3 absCoord = abs(coord);
+
+    vec3 weights = absCoord / (absCoord.x + absCoord.y + absCoord.z);
+
+    float noiseXY = getNoise(coord.xy * scale);
+    float noiseXZ = getNoise(coord.xz * scale);
+    float noiseYZ = getNoise(coord.yz * scale);
+
+    return noiseXY * weights.z + noiseXZ * weights.y + noiseYZ * weights.x;
+}
+
+vec3 starlight(vec3 V)
+{
+    const float starDensity = 0.1;
+
+    if (V.y < 0)
+        return vec3(0.0); // below horizon
+
+   float randValue = pow(getNoise(V, 8.0), 24.0);
+    return vec3(randValue);//vec3(step(randValue, starDensity));
+}
+
 void main()
 {
     float occlusion = texture(uGbuffer.depth, fs_in.TexCoords).r;
-    occlusion = occlusion < 1.0 ? 0.0 : 1.0;
+    occlusion = occlusion < 1.0 ? 0.0 : 1.0; // Depth is 1.0 if sky
 
     /* Get base color */
     vec3 baseColor = texture(uTexture0, fs_in.TexCoords).rgb;
@@ -262,7 +286,7 @@ void main()
 
     vec4 viewDir = normalize(uCamera.invView * vec4(R, 0.0));
     vec3 sunColor;
-    vec3 skyColor = sampleSky(viewDir.xyz) + sampleSun(viewDir.xyz);
+    vec3 skyColor = sampleSky(viewDir.xyz) + starlight(viewDir.xyz) + sampleSun(viewDir.xyz);
     //skyColor += sunColor;
 
     vec4 reflection = raytrace(fragpos.xyz, R);

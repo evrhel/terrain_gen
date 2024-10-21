@@ -10,3 +10,6 @@
 [submodule "thirdparty/lysys"]
 	path = thirdparty/lysys
 	url = git@github.com:evrhel/lysys.git
+[submodule "thirdparty/assimp"]
+	path = thirdparty/assimp
+	url = git@github.com:assimp/assimp.git

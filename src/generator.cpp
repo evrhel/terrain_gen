@@ -241,6 +241,8 @@ struct Imagef
 	float *data;
 	int32_t width, height;
 
+	Imagef() : data(nullptr), width(0), height(0) {}
+
 	Imagef(int32_t width, int32_t height) :
 		width(width), height(height)
 	{
@@ -272,6 +274,8 @@ struct Imagef
 /* Generate terrain data a chunk (x, y) */
 static void generateArea(int32_t x, int32_t y, half_float::half *heightmapOut, half_float::half *normalmapOut)
 {
+	constexpr int32_t kPadded = CHUNK_SIZE + 2; // Padded size for blurring
+
 	IntVector2 start = IntVector2(x, y) * CHUNK_SIZE;
 	IntVector2 end = start + IntVector2(CHUNK_SIZE);
 
@@ -279,22 +283,25 @@ static void generateArea(int32_t x, int32_t y, half_float::half *heightmapOut, h
 	int i, j;
 
 	/* Generate heightmap */
-	Imagef heights(CHUNK_SIZE, CHUNK_SIZE);
-	for (j = 0, pos.y = start.y; pos.y < end.y; j++, pos.y++)	
+	Imagef heights(kPadded, kPadded);
+	for (j = 0, pos.y = start.y - 1; pos.y < end.y + 1; j++, pos.y++)	
 	{
-		for (i = 0, pos.x = start.x; pos.x < end.x; i++, pos.x++)
+		const int32_t joff = (j - 1) * CHUNK_SIZE;
+		for (i = 0, pos.x = start.x - 1; pos.x < end.x + 1; i++, pos.x++)
 		{
 			float r = compute(Vector2(pos));
 			heights.set(i, j, r);
-			heightmapOut[j * CHUNK_SIZE + i] = r;
+
+			if (i >= 1 && i < kPadded - 1 && j >= 1 && j < kPadded - 1)
+				heightmapOut[joff + i - 1] = r;
 		}
 	}
 
 	/* Blur heightmap */
-	Imagef blurred(CHUNK_SIZE, CHUNK_SIZE);
-	for (j = 0; j < CHUNK_SIZE; j++)	
+	Imagef blurred(kPadded, kPadded);
+	for (j = 0; j < kPadded; j++)
 	{
-		for (i = 0; i < CHUNK_SIZE; i++)
+		for (i = 0; i < kPadded; i++)
 		{
 			float a = heights.fetch(i - 1, j - 1);
 			float b = heights.fetch(i, j - 1);
@@ -316,9 +323,10 @@ static void generateArea(int32_t x, int32_t y, half_float::half *heightmapOut, h
 	}
 
 	/* Compute normals */
-	for (j = 0; j < CHUNK_SIZE; j++)
+	for (j = 0; j < kPadded; j++)
 	{
-		for (i = 0; i < CHUNK_SIZE; i++)
+		const int32_t joff = (j - 1) * CHUNK_SIZE;
+		for (i = 0; i < kPadded; i++)
 		{
 			/* Compute image gradient */
 			float gradx = (blurred.fetch(i + 1, j) - blurred.fetch(i - 1, j)) / 2.0f;
@@ -328,10 +336,13 @@ static void generateArea(int32_t x, int32_t y, half_float::half *heightmapOut, h
 			Vector3 normal = normalize(Vector3(-gradx, 1.0f, -grady));
 
 			/* Store normal */
-			int offset = (i + j * CHUNK_SIZE) * 3;
-			normalmapOut[offset + 0] = normal.x;
-			normalmapOut[offset + 1] = normal.y;
-			normalmapOut[offset + 2] = normal.z;
+			if (j >= 1 && j < kPadded - 1 && i >= 1 && i < kPadded - 1)
+			{
+				int32_t offset = (joff + i - 1) * 3; // Offset into normalmap
+				normalmapOut[offset + 0] = normal.x;
+				normalmapOut[offset + 1] = normal.y;
+				normalmapOut[offset + 2] = normal.z;
+			}
 		}
 	}
 }

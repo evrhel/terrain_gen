@@ -1,7 +1,8 @@
 layout (std140) uniform Atmosphere
 {
     vec3 sunDirection;
-    vec3 sunColor;
+    vec3 sunColor; // True sun color
+    vec3 sunColorMask; // Sun mask color
     vec3 sunPosition; // Sun position in screen space, [0, 1]
     vec3 sunPositionWorld; // Sun position in world space
     float sunIntensity;
@@ -17,11 +18,15 @@ layout (std140) uniform Atmosphere
     float atmosphereRadius;
     float Hr; // Thickness of the atmosphere (Rayleigh scattering)
     float Hm; // Thickness of the atmosphere (Mie scattering)
+
+    vec3 fogColor;
+
     float g; // Mie scattering phase function
 } uAtmosphere;
 
 uniform samplerCube uSkybox;
 uniform samplerCube uIrradiance;
+uniform samplerCube uStarbox;
 
 /*vec3 sampleAtmosphere(vec3 direction)
 {
@@ -31,15 +36,23 @@ uniform samplerCube uIrradiance;
 
 vec3 sampleSun(vec3 direction)
 {
-    float intensity = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
-    intensity = pow(intensity, uAtmosphere.sunTightness);
-    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * intensity;
+    if (direction.y < 0.0)
+        return vec3(0.0); // below horizon
 
-    /*float angle = 1.0 - max(dot(direction, -uAtmosphere.sunDirection), 0.0);
+    float angle = max(dot(direction, -uAtmosphere.sunDirection), 0.0);
+    float intensity = step(0.5, pow(angle, uAtmosphere.sunTightness));
+    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * intensity * 25.0;
+}
+
+float sampleEclipse(vec3 direction)
+{
+    float angle = 1.0 - max(dot(direction, -uAtmosphere.sunDirection), 0.0);
     angle *= uAtmosphere.sunTightness;
 
     float sun = exp(-angle * angle * angle);
-    return uAtmosphere.sunColor * uAtmosphere.sunIntensity * sun;*/
+    float eclipse = pow(sun, 1.0001);
+
+    return step(0.75, 1.0 - eclipse);
 }
 
 float calcAirDensity(float height)

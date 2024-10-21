@@ -15,6 +15,9 @@ struct SkyboxGPU
     Vector3 sunColor;
     float _pad1;
 
+    Vector3 sunColorMask;
+    float _pad11;
+
     Vector3 sunPosition;
     float _pad2;
 
@@ -37,6 +40,9 @@ struct SkyboxGPU
     float atmosphereRadius;
     float Hr;
     float Hm;
+
+    Vector3 fogColor;
+
     float g;
 };
 
@@ -79,8 +85,9 @@ const Vector3 kInvWavelength = Vector3(
 
 #define SKYBOX_INDEX_COUNT 36
 
-#define SKYBOX_RESOLUTION 512
+#define SKYBOX_RESOLUTION 1024
 #define IRRADIANCE_RESOLUTION 32
+#define STARBOX_RESOLUTION 1024
 
 static void createCubemapRenderer(GLsizei res, GLuint *fbo, GLuint *tex)
 {
@@ -197,6 +204,21 @@ void Skybox::renderIrradiance() const
     // TODO: Implement
 }
 
+static Vector2 rsi(const Vector3 &r0, const Vector3 &rd, float sr)
+{
+    float a = dot(rd, rd);
+    float b = 2.0f * dot(rd, r0);
+    float c = dot(r0, r0) - (sr * sr);
+    float d = (b * b) - 4.0f * a * c;
+
+    if (d < 0.0f)
+        return Vector2(1e5f, -1e5f);
+
+    float sqrtd = mutil::sqrt(d);
+    float twoa = 2.0f * a;
+    return Vector2((-b - sqrtd) / twoa, (-b + sqrtd) / twoa);
+}
+
 void Skybox::render(Shader *shader) const
 {
     shader->setVector2("uResolution", Vector2(getWindowSize()));
@@ -285,6 +307,10 @@ bool Skybox::update(const Camera *camera)
     _sunPosition = Vector3(sunPosNDC.x / sunPosNDC.w, sunPosNDC.y / sunPosNDC.w, z);
     _sunPosition = (_sunPosition + Vector3(1.0f)) * 0.5f;
 
+    /* Compute sun color */
+    computeSunColor(camera);
+
+    /* Upload to GPU */
     upload();
 
     _dirty = false;
@@ -302,10 +328,12 @@ Skybox::Skybox() :
     _fogDensity(0.1f),
     _planetRadius(6371e3f), _atmosphereRadius(6471e3f),
     _Hr(7994.0f), _Hm(1200.0f), _miePhase(0.76f),
+    _sunTemperature(5772.0f), _sunBlackbody(0.0f), _sunColorMask(1.0f),
     _dirty(true),
     _ubo(0),
     _cubemapFBO(0), _cubemap(0),
-    _irradianceFBO(0), _irradiance(0)
+    _irradianceFBO(0), _irradiance(0),
+    _starbox(0)
 {
 }
 
@@ -313,6 +341,9 @@ Skybox::~Skybox()
 {
     if (_ubo)
         glDeleteBuffers(1, &_ubo);
+
+    if (_starbox)
+        glDeleteTextures(1, &_starbox);
 
     if (_irradiance)
         glDeleteTextures(1, &_irradiance);
@@ -333,6 +364,148 @@ Skybox::~Skybox()
         glDeleteBuffers(1, &_vbo);
 }
 
+static Vector3 blackbody(float K)
+{
+    Vector3 out;
+
+    K = clamp(K, 1000.0f, 40000.0f) / 100.0f;
+
+    if (K <= 66.0f)
+        out.r = 255.0f;
+    else
+    {
+        out.r = 329.698727446f * powf(K - 60.0f, -0.1332047592);
+        out.r = clamp(out.r, 0.0f, 255.0f);
+    }
+
+    if (K <= 66.0f)
+        out.g = 99.4708025861f * logf(K) - 161.1195681661f;
+    else
+        out.g = 288.1221695283f * powf(K - 60.0f, -0.0755148492f);
+    out.g = clamp(out.g, 0.0f, 255.0f);
+
+    if (K > 66.0f)
+        out.b = 255.0f;
+    else if (K <= 19.0f)
+        out.b = 0.0f;
+    else
+    {
+        out.b = 138.5177312231 * logf(K - 10.0f) - 305.0447927307f;
+        out.b = clamp(out.b, 0.0f, 255.0f);
+    }
+
+    return out / 255.0f;
+}
+
+Vector3 Skybox::atmosphere(const Vector3 &V, const Vector3 &eye) const
+{
+    constexpr int iSteps = 16;
+    constexpr int jSteps = 9;
+
+    constexpr Vector3 kRlh(5.8e-6f, 13.0e-6f, 22.4e-6f);
+    constexpr float kMie = 21e-6f;
+    constexpr float shRlh = 8e3f;
+    constexpr float shMie = 1.2e3f;
+    constexpr float g = 0.76f;
+    constexpr float gg = g * g;
+
+    Vector3 pSun = -normalize(_sunDirection);
+    Vector3 r = normalize(V);
+
+    Vector3 r0 = eye;
+
+    Vector2 p = rsi(r0, r, _atmosphereRadius);
+
+    if (p.x > p.y || p.y < 0.0f)
+        return Vector3(0.0f);
+
+    p.y = min(p.y, rsi(r0, r, _planetRadius).x);
+
+    float iStepSize = (p.y - p.x) / iSteps;
+
+    float iTime = 0.0f;
+
+    Vector3 totalRlh(0.0f);
+    Vector3 totalMie(0.0f);
+
+    float iOdRlh = 0.0f;
+    float iOdMie = 0.0f;
+
+    float mu = dot(r, pSun);
+    float mumu = mu * mu;
+    float pRlh = 3.0f / (16.0f * MUTIL_PI) * (1.0f + mumu);
+    float pMie = 3.0f / (8.0f * MUTIL_PI) * ((1.0f - gg) * (mumu + 1.0f)) / (powf(1.0f + gg - 2.0f * mu * g, 1.5f) * (2.0f + gg));
+
+    for (int i = 0; i < iSteps; i++)
+    {
+        Vector3 iPos = r0 + r * (iTime + iStepSize * 0.5f);
+
+        float iHeight = length(iPos) - _planetRadius;
+
+        float tmp = -iHeight / shRlh;
+
+        float odStepRlh = expf(-iHeight / shRlh) * iStepSize;
+        float odStepMie = expf(-iHeight / shMie) * iStepSize;
+
+        iOdRlh += odStepRlh;
+        iOdMie += odStepMie;
+
+        float jStepSize = rsi(iPos, pSun, _atmosphereRadius).y / jSteps;
+
+        float jTime = 0.0f;
+
+        float jOdRlh = 0.0f;
+        float jOdMie = 0.0f;
+
+        for (int j = 0; j < jSteps; j++)
+        {
+            Vector3 jPos = iPos + pSun * (jTime + jStepSize * 0.5f);
+
+            float jHeight = length(jPos) - _planetRadius;
+
+            jOdRlh += expf(-jHeight / shRlh) * jStepSize;
+            jOdMie += expf(-jHeight / shMie) * jStepSize;
+
+            jTime += jStepSize;
+        }
+
+        Vector3 attn = -(Vector3(kMie * (iOdMie + iOdMie)) + kRlh * (iOdRlh + jOdRlh));
+        attn.x = expf(attn.x);
+        attn.y = expf(attn.y);
+        attn.z = expf(attn.z);
+
+        totalRlh += odStepRlh * attn;
+        totalMie += odStepMie * attn;
+
+        iTime += iStepSize;
+    }
+
+    return pRlh * kRlh * totalRlh + pMie * kMie * totalMie;
+}
+
+void Skybox::computeSunColor(const Camera *camera)
+{
+    const Vector3 eye(0.0f, camera->position().y + _planetRadius, 0.0f);
+
+    _sunBlackbody = blackbody(_sunTemperature);
+
+    _sunColor = atmosphere(-_sunDirection, eye);
+    if (isnan(_sunColor.x) || isnan(_sunColor.y) || isnan(_sunColor.z))
+        _sunColor = Vector3(0.0f);
+    _sunColor = _sunColor * _sunColorMask * _sunBlackbody;
+
+   //// _fogColor = atmosphere(Vector3(0.0f, 1.0f, 0.0f), eye);
+   // if (isnan(_fogColor.x) || isnan(_fogColor.y) || isnan(_fogColor.z))
+    //    _fogColor = Vector3(0.0f);
+    //_fogColor = _sunIntensity * _fogColor * _sunColorMask * _sunBlackbody;
+    _fogColor = _sunColor * _sunIntensity;
+}
+
+void Skybox::genStarbox()
+{
+
+}
+
 void Skybox::upload() const
 {
     /* Upload data to GPU */
@@ -342,6 +515,7 @@ void Skybox::upload() const
 
     sb->sunDirection = _sunDirection;
     sb->sunColor = _sunColor;
+    sb->sunColorMask = _sunColorMask;
     sb->sunPosition = _sunPosition;
     sb->sunPositionWorld = _sunPositionWorld;
     sb->sunIntensity = _sunIntensity;
@@ -354,6 +528,7 @@ void Skybox::upload() const
     sb->Hr = _Hr;
     sb->Hm = _Hm;
     sb->g = _miePhase;
+    sb->fogColor = _fogColor;
 
     glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SkyboxGPU), buf);
